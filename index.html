@@ -139,13 +139,23 @@
   .question-card {
     background: var(--surface);
     border: 1px solid var(--border);
+    border-left: 3px solid var(--border);
     border-radius: 10px;
     margin-bottom: 14px;
     overflow: hidden;
     transition: border-color 0.15s;
+    box-shadow: 0 1px 3px rgba(0,0,0,.25);
   }
 
+  /* постійний кольоровий акцент зліва — видно на якому б рядку картки не була прокрутка */
+  .question-card[data-level="junior"] { border-left-color: var(--junior); }
+  .question-card[data-level="middle"] { border-left-color: var(--middle); }
+  .question-card[data-level="senior"] { border-left-color: var(--senior); }
+
   .question-card:hover { border-color: #484F58; }
+  .question-card[data-level="junior"]:hover { border-left-color: var(--junior); }
+  .question-card[data-level="middle"]:hover { border-left-color: var(--middle); }
+  .question-card[data-level="senior"]:hover { border-left-color: var(--senior); }
   .sec-tabs {
     display: flex; flex-wrap: wrap; gap: 6px;
     flex: 1 0 100%;          /* власний рядок на всю ширину хедера */
@@ -279,13 +289,14 @@
   }
 
   pre {
-    background: #0D1117;
-    border: 1px solid var(--border);
+    background: #0A0E14;
+    border: 1px solid #3A414B;
     border-radius: 8px;
     padding: 16px;
     overflow-x: auto;
     margin: 12px 0;
     position: relative;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.4);
   }
 
   .code-label {
@@ -817,11 +828,11 @@
 
     <div class="code-label">TypeScript — як виглядають CDP команди під капотом</div>
     <pre><code><span class="cm">// Коли ти пишеш звичайний Playwright код:</span>
-<span class="kw">await</span> page.<span class="fn">goto</span>(<span class="str">'https://burberry.com'</span>);
+<span class="kw">await</span> page.<span class="fn">goto</span>(<span class="str">'https://myshop.com'</span>);
 <span class="kw">await</span> page.<span class="fn">locator</span>(<span class="str">'.add-to-cart'</span>).<span class="fn">click</span>();
 
 <span class="cm">// Playwright під капотом надсилає CDP команди через WebSocket:</span>
-<span class="cm">// → { "method": "Page.navigate", "params": { "url": "https://burberry.com" } }</span>
+<span class="cm">// → { "method": "Page.navigate", "params": { "url": "https://myshop.com" } }</span>
 <span class="cm">// ← { "result": { "frameId": "abc123" } }</span>
 <span class="cm">//</span>
 <span class="cm">// → { "method": "DOM.querySelector", "params": { "selector": ".add-to-cart" } }</span>
@@ -2249,7 +2260,7 @@ test.<span class="fn">describe</span>(<span class="str">'повільні інт
 <span class="cm">// Received: "abc"</span>
 
 <span class="cm">// Custom matcher падає так:</span>
-<span class="cm">// Expected price to be valid Burberry price format</span>
+<span class="cm">// Expected price to be valid product price format</span>
 <span class="cm">// Received: "abc"</span></code></pre>
 
       <p style="margin:0; padding:10px 14px; background:var(--surface); border-left:3px solid var(--orange); border-radius:4px;"><strong>Просте правило:</strong> helper функція — простіше, зрозуміліше, достатньо для 99% випадків. Custom matcher — тільки якщо важливо мати читабельне повідомлення при падінні яке точно описує що саме перевіряється. Якщо перевірка зустрічається 1-2 рази — просто напиши inline.</p>
@@ -2284,7 +2295,7 @@ test.<span class="fn">describe</span>(<span class="str">'повільні інт
 <span class="kw">await</span> <span class="fn">expect</span>(page.<span class="fn">locator</span>(<span class="str">'.price'</span>)).<span class="fn">toHaveProductPrice</span>(<span class="str">'€'</span>);</code></pre>
         <div class="pattern-box">
       <strong>🔧 TypeScript / JS патерни в цьому прикладі</strong>
-      <code>expect.extend({ toBeBurberryProduct(received: any) {} })</code> — метод extend приймає об'єкт де ключ це назва matcher, значення — функція; <code>return { pass, message: () => string }</code> — функція повертає об'єкт з методом message; <code>() => string</code> — функція що повертає рядок (lazy evaluation).
+      <code>expect.extend({ toBeValidProduct(received: any) {} })</code> — метод extend приймає об'єкт де ключ це назва matcher, значення — функція; <code>return { pass, message: () => string }</code> — функція повертає об'єкт з методом message; <code>() => string</code> — функція що повертає рядок (lazy evaluation).
     </div>
 <div class="voice-box">
       <span class="voice-label">🗣 Як читати вголос</span>
@@ -3366,7 +3377,7 @@ test.<span class="fn">describe</span>.<span class="fn">serial</span>(<span class
   workers: process.env.<span class="prop">CI</span> ? <span class="num">4</span> : <span class="kw">undefined</span>, <span class="cm">// undefined = автоматично (50% CPU cores)</span>
 
   use: {
-    baseURL: <span class="str">'https://staging.burberry.com'</span>,
+    baseURL: <span class="str">'https://staging.myshop.com'</span>,
   },
 });
 
@@ -3396,7 +3407,7 @@ test.<span class="fn">describe</span>(<span class="str">'залежні крок
 <span class="fn">test</span>(<span class="str">'незалежний тест B'</span>, <span class="kw">async</span> ({ <span class="prop">page</span> }) => { <span class="cm">/* ... */</span> });</code></pre>
 
     <div class="code-label">TypeScript — реальний вплив на час прогону</div>
-    <pre><code"><span class="cm">// Приклад: 3918 тестів на Burberry NRW, 6 workers</span>
+    <pre><code"><span class="cm">// Приклад: ~4000 тестів, 6 workers</span>
 <span class="cm">//</span>
 <span class="cm">// БЕЗ fullyParallel:</span>
 <span class="cm">// Якщо є 10 файлів по 400 тестів — кожен файл на 1 worker</span>
@@ -3404,7 +3415,7 @@ test.<span class="fn">describe</span>(<span class="str">'залежні крок
 <span class="cm">// "Вузьке місце" = найдовший файл × кількість файлів / 6 workers</span>
 <span class="cm">//</span>
 <span class="cm">// З fullyParallel: true:</span>
-<span class="cm">// Всі 3918 тестів розподіляються між 6 workers незалежно від файлів</span>
+<span class="cm">// Всі 4000 тестів розподіляються між 6 workers незалежно від файлів</span>
 <span class="cm">// Workers ніколи не чекають — завжди беруть наступний тест зі спільної черги</span>
 <span class="cm">// Теоретичний мінімум: загальний час / 6 (при ідеальному балансуванні)</span>
 <span class="cm">// На практиці: регресія &lt;3 год → може скоротитись до ~1.5 год</span></code></pre>
@@ -3541,7 +3552,7 @@ test.<span class="fn">describe</span>(<span class="str">'японська лок
     <pre><code><span class="cm">// playwright.config.ts — глобальний конфіг</span>
 <span class="kw">export default</span> <span class="fn">defineConfig</span>({
   use: {
-    baseURL: <span class="str">'https://staging.burberry.com'</span>,
+    baseURL: <span class="str">'https://staging.myshop.com'</span>,
     locale: <span class="str">'en-GB'</span>,
     viewport: { width: <span class="num">1280</span>, height: <span class="num">720</span> },
   },
@@ -3555,7 +3566,7 @@ test.<span class="fn">describe</span>(<span class="str">'французька л
   });
 
   <span class="fn">test</span>(<span class="str">'ціни в євро'</span>, <span class="kw">async</span> ({ <span class="prop">page</span> }) => {
-    <span class="cm">// baseURL → https://staging.burberry.com (з конфігу, не змінили)</span>
+    <span class="cm">// baseURL → https://staging.myshop.com (з конфігу, не змінили)</span>
     <span class="cm">// viewport → 1280x720 (з конфігу, не змінили)</span>
     <span class="cm">// locale  → fr-FR (замінили через test.use)</span>
     <span class="kw">await</span> page.<span class="fn">goto</span>(<span class="str">'/fr/products'</span>);
@@ -3682,10 +3693,10 @@ test.<span class="fn">describe</span>(<span class="str">'французька л
       <p style="margin:0 0 6px;">Файл виглядає приблизно так:</p>
       <pre style="background:var(--surface);border-radius:6px;padding:10px;margin:0 0 10px;font-size:11px;line-height:1.7;color:var(--text2);"><code>{
   "cookies": [
-    { "name": "session_id", "value": "abc123", "domain": "burberry.com" }
+    { "name": "session_id", "value": "abc123", "domain": "myshop.com" }
   ],
   "origins": [
-    { "origin": "https://burberry.com",
+    { "origin": "https://myshop.com",
       "localStorage": [{ "name": "user_id", "value": "42" }] }
   ]
 }</code></pre>
@@ -4213,7 +4224,7 @@ page.<span class="fn">on</span>(<span class="str">'dialog'</span>, <span class="
 
   <span class="cm">// Спостерігаємо за запитами — НЕ змінюємо їх (це відрізняє від page.route)</span>
   page.<span class="fn">on</span>(<span class="str">'request'</span>, (request) => {
-    <span class="kw">if</span> (request.<span class="fn">url</span>().<span class="fn">includes</span>(<span class="str">'analytics.burberry.com'</span>)) {
+    <span class="kw">if</span> (request.<span class="fn">url</span>().<span class="fn">includes</span>(<span class="str">'analytics.myshop.com'</span>)) {
       analyticsRequests.<span class="fn">push</span>(request.<span class="fn">url</span>());
     }
   });
@@ -5105,7 +5116,7 @@ page.<span class="fn">workers</span>()       <span class="cm">// всі акти
     </div>
 <div class="voice-box">
       <span class="voice-label">🗣 Як читати вголос</span>
-      Проблема без цього API — в CI-середовищі геолокація визначається IP-адресою сервера (рандомний датацентр), timezone береться з ОС контейнера, а дозволи типу notifications викликають системний попап, який неможливо автоматизувати — тест просто зависне чекаючи кліку якого ніколи не буде. <code>BrowserContext</code> дозволяє встановити все це явно при створенні: передаємо <code>geolocation</code> з конкретними координатами, <code>permissions</code> з масивом дозволів які вже "видані", і <code>timezoneId</code> у форматі IANA назви timezone. Важливо розуміти чому саме context, а не page: context — це "профіль браузерного вікна", одне вікно має одну геолокацію і один timezone для всіх своїх вкладок. Якщо треба протестувати два різних міста паралельно — створюємо два різних context, кожен зі своєю page, і вони абсолютно ізольовані одне від одного, бо це Якір 1 — ізоляція через context. На практиці для проєктів з багатьма доменами як Burberry зручніше встановити timezoneId і locale в <code>playwright.config.ts</code> на рівні всього проєкту — тоді результати тестів однакові незалежно від того де фізично запущений CI-сервер.
+      Проблема без цього API — в CI-середовищі геолокація визначається IP-адресою сервера (рандомний датацентр), timezone береться з ОС контейнера, а дозволи типу notifications викликають системний попап, який неможливо автоматизувати — тест просто зависне чекаючи кліку якого ніколи не буде. <code>BrowserContext</code> дозволяє встановити все це явно при створенні: передаємо <code>geolocation</code> з конкретними координатами, <code>permissions</code> з масивом дозволів які вже "видані", і <code>timezoneId</code> у форматі IANA назви timezone. Важливо розуміти чому саме context, а не page: context — це "профіль браузерного вікна", одне вікно має одну геолокацію і один timezone для всіх своїх вкладок. Якщо треба протестувати два різних міста паралельно — створюємо два різних context, кожен зі своєю page, і вони абсолютно ізольовані одне від одного, бо це Якір 1 — ізоляція через context. На практиці для великих multi-domain e-commerce проєктів зручніше встановити timezoneId і locale в <code>playwright.config.ts</code> на рівні всього проєкту — тоді результати тестів однакові незалежно від того де фізично запущений CI-сервер.
     </div>
   </div>
 </div>
@@ -5452,7 +5463,7 @@ test(<span class="str">'carousel autoplay advances through slides'</span>, <span
         <li><strong>HTTPS</strong> — обов'язково. Без нього Service Worker не реєструється.</li>
       </ul>
 
-      <p style="margin:0 0 10px;"><strong>Реальний приклад:</strong> ти відкриваєш <code>burberry.com</code> в Chrome на телефоні. Браузер пропонує "Додати на головний екран". Після цього Burberry відкривається без адресного рядка, зберігає частину даних офлайн і може надсилати push про нові колекції.</p>
+      <p style="margin:0 0 10px;"><strong>Реальний приклад:</strong> ти відкриваєш <code>myshop.com</code> в Chrome на телефоні. Браузер пропонує "Додати на головний екран". Після цього застосунок відкривається без адресного рядка, зберігає частину даних офлайн і може надсилати push про нові колекції.</p>
 
       <p style="margin:0; padding:10px 14px; background:var(--surface); border-left:3px solid var(--orange); border-radius:4px;"><strong>Для тестування:</strong> Playwright дозволяє тестувати офлайн режим через <code>context.setOffline(true)</code>, слухати Service Workers через <code>page.on('worker', ...)</code>, і емулювати мобільні девайси через <code>devices['iPhone 14']</code>. Важливий нюанс: Service Worker може перехоплювати запити ДО <code>page.route()</code> — детально в наступній картці.</p>
     </div>
@@ -6065,7 +6076,7 @@ page.<span class="fn">on</span>(<span class="str">'request'</span>, <span class=
     <div class="code-label">TypeScript — Підхід 2: мокаємо WebSocket через routeWebSocket() (Playwright 1.48+)</div>
     <pre><code><span class="fn">test</span>(<span class="str">'WebSocket mock — live price updates'</span>, <span class="kw">async</span> ({ <span class="prop">page</span> }) => {
   <span class="cm">// Перехоплюємо WebSocket з'єднання до вказаного URL</span>
-  <span class="kw">await</span> page.<span class="fn">routeWebSocket</span>(<span class="str">'wss://prices.burberry.com/ws'</span>, <span class="kw">async</span> ws => {
+  <span class="kw">await</span> page.<span class="fn">routeWebSocket</span>(<span class="str">'wss://prices.myshop.com/ws'</span>, <span class="kw">async</span> ws => {
     <span class="cm">// ws — об'єкт WebSocketRoute</span>
 
     <span class="cm">// Слухаємо повідомлення від браузера до сервера</span>
@@ -6082,7 +6093,7 @@ page.<span class="fn">on</span>(<span class="str">'request'</span>, <span class=
 });
 
 <span class="cm">// Також доступно на рівні context — для всіх сторінок:</span>
-<span class="cm">// await context.routeWebSocket('wss://prices.burberry.com/ws', handler);</span></code></pre>
+<span class="cm">// await context.routeWebSocket('wss://prices.myshop.com/ws', handler);</span></code></pre>
 
     <div class="tip-box">
       <strong>💡 Коли який підхід:</strong><br>
@@ -6284,9 +6295,9 @@ window.dataLayer.push({
 
     <div class="code-label">Інструментарій дебагу — codegen, Inspector, UI Mode</div>
     <pre><code><span class="cm"># ── Codegen: записує твої дії в браузері як код ────────────────</span>
-npx playwright codegen https://burberry.com
-npx playwright codegen --target=typescript https://burberry.com
-npx playwright codegen --device="iPhone 14" https://burberry.com
+npx playwright codegen https://myshop.com
+npx playwright codegen --target=typescript https://myshop.com
+npx playwright codegen --device="iPhone 14" https://myshop.com
 <span class="cm"># ⚠️ Codegen генерує хорошу ОСНОВУ, а не готовий тест.</span>
 <span class="cm"># Згенерований код майже завжди треба рефакторити: винести в Page Object,</span>
 <span class="cm"># замінити крихкі локатори на семантичні, додати нормальні assertions.</span>
@@ -6645,9 +6656,9 @@ Title: ${</span><span class="kw">await</span> page.<span class="fn">title</span>
   </div>
   <div class="q-body">
         <div class="answer">
-      <p style="margin:0 0 10px;">Реальний кейс з Burberry NRW Browse: тест підрахунку товарів на PLP нестабільно падав в CI. Проблема виявилась у virtualized list — DOM рендерить тільки видиму частину, тому <code>locator.count()</code> повертав різні числа залежно від стану скролу. Рішення: перейти від DOM-count до GTM dataLayer як source of truth.</p>
+      <p style="margin:0 0 10px;">Реальний кейс з E-commerce PLP: тест підрахунку товарів на PLP нестабільно падав в CI. Проблема виявилась у virtualized list — DOM рендерить тільки видиму частину, тому <code>locator.count()</code> повертав різні числа залежно від стану скролу. Рішення: перейти від DOM-count до GTM dataLayer як source of truth.</p>
     </div>
-<div class="code-label">Кейс: Burberry PLP — virtualization ламала DOM-based assertions</div>
+<div class="code-label">Кейс: virtualization ламала DOM-based assertions на PLP</div>
     <pre><code><span class="cm">// ❌ Було: рахуємо елементи в DOM напряму</span>
 <span class="kw">const</span> count = <span class="kw">await</span> page.<span class="fn">locator</span>(<span class="str">'.product-tile'</span>).<span class="fn">count</span>();
 <span class="fn">expect</span>(count).<span class="fn">toBe</span>(<span class="num">48</span>); <span class="cm">// flaky: virtual list рендерить лише видиму частину</span>
@@ -6892,11 +6903,11 @@ Title: ${</span><span class="kw">await</span> page.<span class="fn">title</span>
         <div class="answer">
       <p style="margin:0 0 10px;">Test data governance — це система правил яка гарантує що тести використовують тільки безпечні тестові дані і не впливають на production. В e-commerce це критично: тест може випадково списати реальні гроші або зіпсувати реальне замовлення якщо використає неправильний SKU або токен.</p>
     </div>
-<div class="code-label">Кейс: Burberry NRW — Hybris BlockedProductList (EWS-1239)</div>
+<div class="code-label">Кейс: Multi-region e-commerce — BlockedProductList у зовнішньому PIM (BUG-5521)</div>
     <pre><code><span class="cm">// Проблема: тести падали, бо QA/мерчандайзери випадково</span>
 <span class="cm">// міняли тестові товари в проді (ціна, наявність, статус)</span>
 
-<span class="cm">// Рішення: ізольований allowlist-шар поверх Hybris</span>
+<span class="cm">// Рішення: ізольований allowlist-шар поверх зовнішнього PIM</span>
 <span class="kw">type</span> <span class="cls">BlockedProductList</span> = {
   sku: <span class="cls">string</span>;
   reservedFor: <span class="cls">string</span>; <span class="cm">// suite/team, що володіє товаром</span>
@@ -6907,7 +6918,7 @@ Title: ${</span><span class="kw">await</span> page.<span class="fn">title</span>
   <span class="kw">const</span> entry = <span class="kw">await</span> <span class="fn">getBlockedProductEntry</span>(sku);
   <span class="kw">if</span> (!entry) {
     <span class="kw">throw</span> <span class="kw">new</span> <span class="cls">Error</span>(
-      <span class="str">`SKU ${sku} не в BlockedProductList — додай товар в EWS-1239 перед використанням у тестах`</span>
+      <span class="str">`SKU ${sku} не в BlockedProductList — додай товар в BUG-5521 перед використанням у тестах`</span>
     );
   }
 }</code></pre>
@@ -6918,7 +6929,7 @@ Title: ${</span><span class="kw">await</span> page.<span class="fn">title</span>
     </div>
 <div class="voice-box">
       <span class="voice-label">🗣 Як читати вголос</span>
-      Корінна проблема test data governance на великих платформах — тестові дані не ізольовані від бойових процесів: мерчандайзер може змінити ціну чи прибрати товар з наявності, і тест, який про це не знає, почне падати без жодної зміни в коді. Рішення — окремий шар <code>BlockedProductList</code> у Hybris: список SKU, зарезервованих за конкретними suite, з полем <code>lockedFields</code>, яке каже, які саме атрибути товару не можна чіпати. Функція <code>assertProductIsGovernanceLocked</code> запускається до того, як тест почне використовувати товар, і явно фейлить з людським повідомленням, якщо SKU не зареєстрований — це перетворює мовчазний flaky-фейл на явну й зрозумілу помилку конфігурації, яку легко виправити.
+      Корінна проблема test data governance на великих платформах — тестові дані не ізольовані від бойових процесів: мерчандайзер може змінити ціну чи прибрати товар з наявності, і тест, який про це не знає, почне падати без жодної зміни в коді. Рішення — окремий шар <code>BlockedProductList</code> у зовнішньому PIM: список SKU, зарезервованих за конкретними suite, з полем <code>lockedFields</code>, яке каже, які саме атрибути товару не можна чіпати. Функція <code>assertProductIsGovernanceLocked</code> запускається до того, як тест почне використовувати товар, і явно фейлить з людським повідомленням, якщо SKU не зареєстрований — це перетворює мовчазний flaky-фейл на явну й зрозумілу помилку конфігурації, яку легко виправити.
     </div>
   </div>
 </div>
@@ -6970,7 +6981,7 @@ Title: ${</span><span class="kw">await</span> page.<span class="fn">title</span>
 <span class="cm">// npx playwright test --grep "(?=.*@smoke)(?=.*@auth)" # AND</span>
 <span class="cm">// npx playwright test --grep-invert @slow    # виключити</span>
 
-<span class="cm">// Стратегія для Burberry NRW:</span>
+<span class="cm">// Стратегія для великого e-commerce проєкту:</span>
 <span class="cm">// @smoke     → PR checks (5 хв)</span>
 <span class="cm">// @critical  → post-deploy (15 хв)</span>
 <span class="cm">// @regression → нічний запуск (3 год)</span></code></pre>
@@ -7029,7 +7040,7 @@ Title: ${</span><span class="kw">await</span> page.<span class="fn">title</span>
     <pre><code><span class="cm">// fixme — тест зламаний, потребує виправлення</span>
 <span class="cm">// Семантично відрізняється від skip: це не "нерелевантно", а "треба полагодити"</span>
 <span class="fn">test</span>(<span class="str">'фільтр за розміром на PLP'</span>, <span class="kw">async</span> ({ <span class="prop">page</span> }) => {
-  test.<span class="fn">fixme</span>(); <span class="cm">// зламано після рефакторингу фільтрів — EWS-2341</span>
+  test.<span class="fn">fixme</span>(); <span class="cm">// зламано після рефакторингу фільтрів — BUG-7742</span>
   <span class="kw">await</span> page.<span class="fn">goto</span>(<span class="str">'/women/dresses'</span>);
   <span class="cm">// ...</span>
 });
@@ -7044,7 +7055,7 @@ Title: ${</span><span class="kw">await</span> page.<span class="fn">title</span>
     <pre><code><span class="cm">// test.fail() — найнетиповіша анотація</span>
 <span class="cm">// "Я знаю що цей тест падає. Якщо він раптом пройде — скажи мені."</span>
 <span class="fn">test</span>(<span class="str">'промокод застосовується до sale-товарів'</span>, <span class="kw">async</span> ({ <span class="prop">page</span> }) => {
-  test.<span class="fn">fail</span>(); <span class="cm">// відомий баг EWS-1987, промокод ігнорується для sale</span>
+  test.<span class="fn">fail</span>(); <span class="cm">// відомий баг BUG-3310, промокод ігнорується для sale</span>
 
   <span class="kw">await</span> page.<span class="fn">goto</span>(<span class="str">'/cart'</span>);
   <span class="kw">await</span> page.<span class="fn">locator</span>(<span class="str">'#promo-input'</span>).<span class="fn">fill</span>(<span class="str">'SAVE10'</span>);
@@ -7585,9 +7596,9 @@ test.describe.<span class="fn">configure</span>({ mode: <span class="str">'seria
 <span class="cm">// Об'єднати HTML звіти після sharding:</span>
 <span class="cm">// npx playwright merge-reports --reporter html ./blob-reports</span>
 
-<span class="cm">// Приклад Burberry-scale:</span>
-<span class="cm">// 3918 тестів / 6 workers = ~15 хвилин → full regression</span></code></pre>
-    <div class="tip-box"><strong>💡 З твого проекту:</strong> 3,918 тестів на 6 воркерах = ~3 години. Sharding на 3 GitLab jobs × 6 workers = ~1 година.</div>
+<span class="cm">// Приклад для великого проєкту:</span>
+<span class="cm">// 4000 тестів / 6 workers = ~15 хвилин → full regression</span></code></pre>
+    <div class="tip-box"><strong>💡 Приклад:</strong> ~4000 тестів на 6 воркерах = ~3 години без sharding. Sharding на 3 CI jobs × 6 workers = ~1 година.</div>
         <div class="pattern-box">
       <strong>🔧 TypeScript / JS патерни в цьому прикладі</strong>
       <code>--shard=1/4</code> — CLI аргумент у форматі дробу; <code>fullyParallel: true</code> — булева конфігурація; <code>test.describe.configure({ mode: 'serial' })</code> — виклик методу на вкладеному об'єкті.
@@ -7665,7 +7676,7 @@ npx allure open allure-report
 <span class="cm"># Або одразу serve (генерує + відкриває в браузері)</span>
 npx allure serve allure-results</code></pre>
 
-    <div class="code-label">playwright.config.ts — Allure з historical trends через S3 (Burberry підхід)</div>
+    <div class="code-label">playwright.config.ts — Allure з historical trends через S3</div>
     <pre><code><span class="cm">// Щоб history не губилась між прогонами — зберігаємо в S3</span>
 <span class="cm">// В GitLab CI pipeline (спрощено):</span>
 
@@ -7690,7 +7701,7 @@ reporter: [
     outputFolder: <span class="str">'allure-results'</span>,
     suiteTitle: <span class="kw">false</span>,
     environmentInfo: {
-      Project: <span class="str">'Burberry NRW Browse'</span>,
+      Project: <span class="str">'E-commerce PLP'</span>,
       Environment: process.env.<span class="prop">ENV</span> || <span class="str">'staging'</span>,
     },
   }],
@@ -8137,7 +8148,7 @@ npx playwright test product.spec.ts --update-snapshots
         <div class="answer">
       <p style="margin:0 0 10px;">Платформа з 45 країновими доменами — це 45 варіантів мови, валюти, формату дат і URL структури. Тестувати кожен домен вручну нереально. Data-driven підхід: описуємо конфігурацію кожного домену в масиві і генеруємо тести автоматично.</p>
     </div>
-<div class="code-label">Кейс: Burberry.com NRW — 45 country domains, 9 мов</div>
+<div class="code-label">Кейс: Multi-domain e-commerce — 45 country domains, 9 мов</div>
     <pre><code><span class="cm">// Data-driven підхід: один тест, матриця доменів через playwright.config.ts projects</span>
 <span class="kw">type</span> <span class="cls">DomainConfig</span> = {
   domain: <span class="cls">string</span>;
@@ -8156,7 +8167,7 @@ npx playwright test product.spec.ts --update-snapshots
   <span class="fn">test</span>(<span class="str">`PDP коректний для домену ${domain}`</span>, <span class="kw">async</span> ({ <span class="prop">browser</span> }) => {
     <span class="kw">const</span> context = <span class="kw">await</span> browser.<span class="fn">newContext</span>({ locale });
     <span class="kw">const</span> page = <span class="kw">await</span> context.<span class="fn">newPage</span>();
-    <span class="kw">await</span> page.<span class="fn">goto</span>(<span class="str">`https://${domain}.burberry.com/product/123`</span>);
+    <span class="kw">await</span> page.<span class="fn">goto</span>(<span class="str">`https://${domain}.myshop.com/product/123`</span>);
 
     <span class="kw">await</span> <span class="fn">expect</span>(page.<span class="fn">locator</span>(<span class="str">'html'</span>)).<span class="fn">toHaveAttribute</span>(<span class="str">'lang'</span>, expectedLangAttr);
     <span class="kw">await</span> <span class="fn">expect</span>(page.<span class="fn">locator</span>(<span class="str">'.price'</span>)).<span class="fn">toContainText</span>(currency);
@@ -8267,7 +8278,7 @@ E2E (Playwright)      → весь застосунок цілком, реаль
         <div class="answer">
       <p style="margin:0 0 10px;">Реальний кейс: після оновлення Node.js з v20 до v24 CI pipeline почав падати з незрозумілими помилками. Проблема виявилась у несумісності ES modules і CommonJS в helper скриптах, плюс зміна в обробці environment variables. Вирішення — поетапне: спочатку ізолювати причину, потім конвертувати скрипти.</p>
     </div>
-<div class="code-label">Кейс: branch ta/PRO-4414 — GitLab CI compatibility fix</div>
+<div class="code-label">Кейс: branch ta/PROJ-1102 — GitLab CI compatibility fix</div>
     <pre><code><span class="cm">// Проблема 1: TS helper-скрипти падали на require() у Node 24 (ESM-first)</span>
 <span class="cm">// ❌ import { getDefectLabel } from './helpers/labels'; // top-level await issues</span>
 <span class="cm">// ✅ Конвертація в CommonJS для helper-скриптів CI (не для тестів)</span>
@@ -8279,7 +8290,7 @@ E2E (Playwright)      → весь застосунок цілком, реаль
 <span class="kw">const</span> token = process.env.GITLAB_API_TOKEN;
 <span class="kw">if</span> (!token) <span class="kw">throw</span> <span class="kw">new</span> <span class="cls">Error</span>(<span class="str">'GITLAB_API_TOKEN відсутній у CI variables'</span>);
 
-<span class="cm">// Проблема 3: label-names не співпадали з Jira sync (PRO-4414)</span>
+<span class="cm">// Проблема 3: label-names не співпадали з Jira sync (PROJ-1102)</span>
 <span class="cm">// ❌ labels: ['defect'] // GitLab створював, але Jira-sync шукав 'bug-auto'</span>
 <span class="cm">// ✅ Уніфікований label-mapping на обидва боки інтеграції</span>
 <span class="kw">const</span> LABEL_MAP = { defect: <span class="str">'bug-auto'</span> } <span class="kw">as const</span>;</code></pre>
@@ -8290,7 +8301,7 @@ E2E (Playwright)      → весь застосунок цілком, реаль
     </div>
 <div class="voice-box">
       <span class="voice-label">🗣 Як читати вголос</span>
-      Перехід на Node.js 24 зламав одразу декілька речей. По-перше, helper-скрипти, написані під TypeScript з ESM-синтаксисом, почали конфліктувати з тим, як новий Node резолвить модулі — я перевела саме CI-скрипти (не самі тести) на CommonJS через <code>require()</code>, оскільки для разових helper-задач це простіше й надійніше за дебаг ESM top-level await. По-друге, формат маскування GitLab CI variables змінився, і токен, який раніше читався з <code>CI_JOB_TOKEN</code>, почав приходити в неправильному форматі — перейшла на явну protected variable з перевіркою на <code>undefined</code> перед використанням, щоб помилка падала одразу з зрозумілим повідомленням, а не на кроці автентифікації. По-третє, в інтеграції PRO-4414 — автостворення GitLab issues з синком у Jira — назви лейблів розійшлись між системами, тому я зробила єдиний <code>LABEL_MAP</code> як shared mapping-шар, щоб зміна назви в одному місці не ламала інтеграцію.
+      Перехід на Node.js 24 зламав одразу декілька речей. По-перше, helper-скрипти, написані під TypeScript з ESM-синтаксисом, почали конфліктувати з тим, як новий Node резолвить модулі — я перевела саме CI-скрипти (не самі тести) на CommonJS через <code>require()</code>, оскільки для разових helper-задач це простіше й надійніше за дебаг ESM top-level await. По-друге, формат маскування GitLab CI variables змінився, і токен, який раніше читався з <code>CI_JOB_TOKEN</code>, почав приходити в неправильному форматі — перейшла на явну protected variable з перевіркою на <code>undefined</code> перед використанням, щоб помилка падала одразу з зрозумілим повідомленням, а не на кроці автентифікації. По-третє, в інтеграції PROJ-1102 — автостворення GitLab issues з синком у Jira — назви лейблів розійшлись між системами, тому я зробила єдиний <code>LABEL_MAP</code> як shared mapping-шар, щоб зміна назви в одному місці не ламала інтеграцію.
     </div>
   </div>
 </div>
@@ -8307,7 +8318,7 @@ E2E (Playwright)      → весь застосунок цілком, реаль
         <div class="answer">
       <p style="margin:0 0 10px;">Це баланс між швидкістю доставки нових фіч і впевненістю що релізи стабільні. Надто багато тестів уповільнюють pipeline і блокують розробку. Надто мало — пропускають баги в production. Стратегія: тести за рівнями ризику з різними тригерами запуску.</p>
     </div>
-<div class="code-label">Контекст: Burberry NRW — 2-тижневий реліз-цикл, 3918 тестів, 6 паралельних воркерів</div>
+<div class="code-label">Контекст: e-commerce проєкт — 2-тижневий реліз-цикл, ~4000 тестів, 6 паралельних воркерів</div>
     <pre><code><span class="cm">// Рівні захисту замість "запускати все на кожен PR"</span>
 <span class="kw">const</span> pipelineStrategy = {
   onPR:        { tags: [<span class="str">'@smoke'</span>],      duration: <span class="str">'~5 хв'</span>,  workers: <span class="num">6</span> },
@@ -8329,7 +8340,7 @@ E2E (Playwright)      → весь застосунок цілком, реаль
     </div>
 <div class="voice-box">
       <span class="voice-label">🗣 Як читати вголос</span>
-      Моя стратегія — не запускати весь regression-набір на кожен PR, а розподілити перевірки за рівнями ризику: на PR — тільки smoke-тести, секунди-хвилини, швидкий фідбек розробнику. На merge в main — critical-флоу, які покривають гроші-критичні шляхи типу checkout. Повний regression на 3918 тестів і 6 паралельних воркерів — нічний запуск, без тиску на швидкість релізу. Це дає 0 критичних production-дефектів при 2-тижневому циклі. Окремо я слідкую не тільки за pass rate, а за трендом flaky-тестів через Allure history, яка персистить у S3 — якщо тест періодично падає без зміни коду, це сигнал розслідувати причину до того, як він почне блокувати релізи. AIRA score 4.7 — це наша внутрішня метрика здоров'я автоматизації, яку я звітую стейкхолдерам, щоб рішення "сповільнити реліз заради стабільності" приймались на даних, а не на відчуттях.
+      Моя стратегія — не запускати весь regression-набір на кожен PR, а розподілити перевірки за рівнями ризику: на PR — тільки smoke-тести, секунди-хвилини, швидкий фідбек розробнику. На merge в main — critical-флоу, які покривають гроші-критичні шляхи типу checkout. Повний regression на 4000 тестів і 6 паралельних воркерів — нічний запуск, без тиску на швидкість релізу. Це дає 0 критичних production-дефектів при 2-тижневому циклі. Окремо я слідкую не тільки за pass rate, а за трендом flaky-тестів через Allure history, яка персистить у S3 — якщо тест періодично падає без зміни коду, це сигнал розслідувати причину до того, як він почне блокувати релізи. AIRA score 4.7 — це наша внутрішня метрика здоров'я автоматизації, яку я звітую стейкхолдерам, щоб рішення "сповільнити реліз заради стабільності" приймались на даних, а не на відчуттях.
     </div>
   </div>
 </div>
@@ -8344,10 +8355,10 @@ E2E (Playwright)      → весь застосунок цілком, реаль
   </div>
   <div class="q-body">
         <div class="answer">
-      <p style="margin:0 0 10px;">Онбординг QA engineer — це не тільки "покажи де лежить код". Треба передати розуміння архітектури тестів, домену (Burberry e-commerce), команди і процесів. Хороший онбординг скорочує час до першого корисного PR з місяця до тижня.</p>
+      <p style="margin:0 0 10px;">Онбординг QA engineer — це не тільки "покажи де лежить код". Треба передати розуміння архітектури тестів, домену (e-commerce), команди і процесів. Хороший онбординг скорочує час до першого корисного PR з місяця до тижня.</p>
     </div>
 <div class="code-label">Лідерський підхід</div>
-    <pre><code><span class="cm">// Чеклист PR review для команди (Burberry NRW Prorsum)</span>
+    <pre><code><span class="cm">// Чеклист PR review для команди QA automation</span>
 <span class="kw">const</span> prReviewChecklist = [
   <span class="str">'Locator priority: semantic (getByRole/getByLabel) перед CSS/XPath'</span>,
   <span class="str">'Page Object: новий метод — чи є вже схожий у POFactory?'</span>,
