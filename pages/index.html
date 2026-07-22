@@ -578,7 +578,7 @@
   </div>
   <div class="q-body">
     <div class="answer">
-      <p style="margin:0 0 10px;">Playwright — це open-source фреймворк від Microsoft для end-to-end тестування браузерів. Підтримує Chromium, Firefox і WebKit в одному API. З'явився у 2020 і швидко став стандартом завдяки простоті і надійності.</p>
+      <p style="margin:0 0 10px;">Playwright — це open-source фреймворк від Microsoft для end-to-end тестування веб-застосунків. Підтримує Chromium, Firefox і WebKit в одному API. З'явився у 2020 і швидко став стандартом завдяки простоті і надійності.</p>
 
       <p style="margin:0 0 6px;"><strong>Головна технічна різниця — спосіб керування браузером:</strong></p>
 
@@ -6903,9 +6903,9 @@ Title: ${</span><span class="kw">await</span> page.<span class="fn">title</span>
         <div class="answer">
       <p style="margin:0 0 10px;">Test data governance — це система правил яка гарантує що тести використовують тільки безпечні тестові дані і не впливають на production. В e-commerce це критично: тест може випадково списати реальні гроші або зіпсувати реальне замовлення якщо використає неправильний SKU або токен.</p>
     </div>
-<div class="code-label">Кейс: Multi-region e-commerce — BlockedProductList у зовнішньому PIM (BUG-5521)</div>
+<div class="code-label">Кейс: Multi-region e-commerce — BlockedProductList у зовнішньому PIM</div>
     <pre><code><span class="cm">// Проблема: тести падали, бо QA/мерчандайзери випадково</span>
-<span class="cm">// міняли тестові товари в проді (ціна, наявність, статус)</span>
+<span class="cm">// міняли тестові товари в тестовому середовищі (ціна, наявність, статус)</span>
 
 <span class="cm">// Рішення: ізольований allowlist-шар поверх зовнішнього PIM</span>
 <span class="kw">type</span> <span class="cls">BlockedProductList</span> = {
@@ -6918,7 +6918,7 @@ Title: ${</span><span class="kw">await</span> page.<span class="fn">title</span>
   <span class="kw">const</span> entry = <span class="kw">await</span> <span class="fn">getBlockedProductEntry</span>(sku);
   <span class="kw">if</span> (!entry) {
     <span class="kw">throw</span> <span class="kw">new</span> <span class="cls">Error</span>(
-      <span class="str">`SKU ${sku} не в BlockedProductList — додай товар в BUG-5521 перед використанням у тестах`</span>
+      <span class="str">`SKU ${sku} не в BlockedProductList — додай товар в список перед використанням у тестах`</span>
     );
   }
 }</code></pre>
