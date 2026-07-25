@@ -29,3 +29,41 @@ Browser, Context and Page
 
 **Notes:**  
 First publication of the Playwright Notes series.
+
+---
+
+## Playwright Notes #2 — Fixtures — я користувалася ними місяцями, не розуміючи, чому вони працюють
+
+**Series:** Playwright Notes  
+**Number:** #2  
+**Status:** Published  
+**Platform:** LinkedIn  
+**Date published:** 2026-07-XX  
+
+**Topic:**  
+Fixtures / dependency graph / resource management / setup & teardown
+
+**Core idea:**  
+Playwright fixtures remove resource management from the test.  
+The test declares what it needs; Playwright builds and cleans up the environment automatically.
+
+**Related guide section:**  
+Test Lifecycle: Fixtures and Hooks
+
+**Related guide cards:**  
+- Q31 — Fixtures
+- Q32 — Test vs Worker Fixtures
+- Q33 — Custom Fixtures
+- Q34 — Setup and Teardown
+- Q35 — Fixture Dependencies
+
+**Links:**  
+
+🔗 LinkedIn post:  
+-
+
+🔗 Playwright Guide:  
+https://iuliiaberezianska.github.io/playwright-notes/
+
+**Notes:**  
+Explains fixtures through the problem they solve rather than their API. Introduces the architectural idea that tests describe dependencies, while Playwright manages the lifecycle of resources.
