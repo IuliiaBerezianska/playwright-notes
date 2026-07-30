@@ -409,7 +409,7 @@
       <div class="logo-icon">🎭</div>
       <div>
         <h1>Playwright Interview Guide</h1>
-        <div class="subtitle">TypeScript · 98 питань · 10 розділів</div>
+        <div class="subtitle">TypeScript · 103 питань · 10 розділів</div>
       </div>
     </div>
     <div class="level-tabs">
@@ -1150,7 +1150,7 @@
       <span class="section-title" style="color:var(--junior)">JavaScript / TypeScript для Playwright</span>
       <span class="section-sub">концепти без яких код не читається</span>
     </span>
-    <span class="section-count">5</span>
+    <span class="section-count">10</span>
   </div>
   <div class="section-body">
 
@@ -1233,11 +1233,258 @@ page.<span class="fn">on</span>(<span class="str">'dialog'</span>, dialog => {
   </div>
 </div>
 
-<!-- Q_NEW_SERIALIZATION -->
+<!-- Q_NEW_ASYNC_WHY -->
+<div class="question-card q-card" data-sec="1" data-level="middle">
+  <div class="q-header" onclick="toggleCard(this)">
+    <span class="q-num">11</span>
+    <span class="q-title">Чому майже кожен метод Playwright повертає Promise?</span>
+    <div class="q-right"><span class="sec-badge" style="color:var(--junior); border-color:var(--junior)">JS/TS</span>
+      <span class="level-badge badge-middle">Middle</span>
+      <span class="chevron">&#9654;</span>
+    </div>
+  </div>
+  <div class="q-body">
+    <div class="answer">
+      <p style="margin:0 0 10px;">Твій тест і браузер — це <strong>два окремі процеси</strong>. Тест виконується в Node.js, браузер (Chromium/Firefox/WebKit) — окрема програма зі своєю пам'яттю. Вони спілкуються через протокол обміну повідомленнями — у Chromium це <strong>CDP</strong> (Chrome DevTools Protocol) поверх WebSocket, той самий протокол, яким користується сама вкладка DevTools.</p>
+      <p style="margin:0 0 10px;">Кожна команда, яку Playwright шле браузеру — <code>click</code>, <code>goto</code>, <code>textContent</code> — це JSON-повідомлення з унікальним <code>id</code>. CDP побудований на JSON-RPC: <em>"every command sent by the client must have a unique id... responses from Chromium carry the same id"</em>. Браузер, відповідаючи, включає той самий <code>id</code>, щоб Playwright міг зіставити відповідь із запитом навіть коли кілька команд летять одночасно.</p>
+      <p style="margin:0; padding:10px 14px; background:var(--surface); border-left:3px solid var(--orange); border-radius:4px;"><strong>Звідси й наслідок:</strong> жодна дія, що взаємодіє з браузером, не може виконатись миттєво в тому ж рядку коду — вона мусить дочекатись відповіді. Тому <strong>майже всі методи, які взаємодіють із браузером</strong>, повертають Promise (не буквально всі — <code>page.locator()</code>, <code>getByRole()</code>, <code>browser.contexts()</code> синхронні, бо нічого не питають у браузера в момент виклику).</p>
+    </div>
+
+    <div class="code-label">TypeScript — команда і відповідь, спрощено за структурою CDP</div>
+    <pre><code><span class="cm">// Playwright відправляє (спрощено):</span>
+{ id: <span class="num">42</span>, method: <span class="str">'Input.dispatchMouseEvent'</span>, params: { <span class="cm">/* координати кліку */</span> } }
+
+<span class="cm">// Браузер відповідає, коли клік реально стався:</span>
+{ id: <span class="num">42</span>, result: { <span class="cm">/* ... */</span> } }
+
+<span class="cm">// id той самий — тому Playwright точно знає:</span>
+<span class="cm">// "це відповідь саме на ТОЙ клік, а не на щось інше"</span></code></pre>
+
+    <div class="voice-box">
+      <span class="voice-label">&#128483; Як читати вголос</span>
+      Тест і браузер — два окремі процеси, які спілкуються через протокол обміну повідомленнями, а не викликають функції одне в одного напряму. У Chromium це відбувається через CDP, Chrome DevTools Protocol, поверх WebSocket — той самий протокол яким користується сама вкладка DevTools у браузері. Кожна команда, яку Playwright шле браузеру, це JSON-повідомлення з унікальним id, і браузер, відповідаючи, повертає той самий id, щоб можна було зіставити яка відповідь до якого запиту належить, навіть коли кілька команд летять одночасно. Саме тому жодна дія, що взаємодіє з браузером, не може виконатись миттєво в тому самому рядку коду — вона мусить дочекатись відповіді. І саме тому майже всі методи, які взаємодіють із браузером, повертають Promise — хоча не буквально всі: page.locator, getByRole, browser.contexts синхронні, бо нічого не питають у браузера в момент виклику.
+    </div>
+  </div>
+</div>
+
+<!-- Q_NEW_AWAIT_CALLBACK -->
+<div class="question-card q-card" data-sec="1" data-level="middle">
+  <div class="q-header" onclick="toggleCard(this)">
+    <span class="q-num">12</span>
+    <span class="q-title">Що таке await насправді і як він "розшифровується" в callback?</span>
+    <div class="q-right"><span class="sec-badge" style="color:var(--junior); border-color:var(--junior)">JS/TS</span>
+      <span class="level-badge badge-middle">Middle</span>
+      <span class="chevron">&#9654;</span>
+    </div>
+  </div>
+  <div class="q-body">
+    <div class="answer">
+      <p style="margin:0 0 10px;"><code>await</code> — не окрема команда "почекай". Спрощено це можна уявити як синтаксис, що бере весь код нижче і "прикріплює" його як callback до Promise через <code>.then()</code>:</p>
+    </div>
+
+    <div class="code-label">TypeScript — те що ти пишеш vs те, у що це ментально перетворюється</div>
+    <pre><code><span class="cm">// Пишеш:</span>
+<span class="kw">await</span> page.<span class="fn">click</span>(<span class="str">'button.checkout'</span>);
+<span class="kw">await</span> page.<span class="fn">locator</span>(<span class="str">'.confirmation'</span>).<span class="fn">waitFor</span>();
+
+<span class="cm">// Ментально можна уявити як:</span>
+page.<span class="fn">click</span>(<span class="str">'button.checkout'</span>).<span class="fn">then</span>(<span class="kw">function</span> callback1() {
+  <span class="kw">return</span> page.<span class="fn">locator</span>(<span class="str">'.confirmation'</span>).<span class="fn">waitFor</span>();
+});</code></pre>
+
+    <div class="answer">
+      <p style="margin:0 0 10px;"><strong>Де саме проходить межа callback:</strong> до <strong>найближчого наступного <code>await</code></strong>, а якщо його немає — до <strong>кінця функції</strong>. Не буквально "наступний рядок" — між двома <code>await</code> може бути кілька синхронних рядків (<code>console.log</code>, обчислення), і всі вони потрапляють в один і той самий callback:</p>
+    </div>
+
+    <div class="code-label">TypeScript — де саме проходить межа</div>
+    <pre><code><span class="kw">await</span> page.<span class="fn">click</span>(<span class="str">'button.checkout'</span>);
+<span class="cm">// ↑ МЕЖА починається тут</span>
+
+<span class="kw">console</span>.<span class="fn">log</span>(<span class="str">'після кліку'</span>);
+<span class="cm">// ↑ це все ще той самий callback1</span>
+
+<span class="kw">await</span> page.<span class="fn">locator</span>(<span class="str">'.confirmation'</span>).<span class="fn">waitFor</span>();
+<span class="cm">// ↑ МЕЖА закінчується тут — бо зустрівся наступний await</span></code></pre>
+
+    <div class="answer">
+      <p style="margin:0 0 10px;">Саме тому в першому прикладі <code>waitFor()</code> опинився всередині <code>callback1</code>: між першим і другим <code>await</code> не було жодного проміжного рядка, тож callback1 склався виключно з виклику <code>waitFor()</code> — межа шукала наступний <code>await</code>, знайшла його одразу, і більше нічого туди не потрапило.</p>
+      <p style="margin:0 0 10px;"><strong>Callback — не окрема пауза "подумати".</strong> Це просто "шматок коду, викликаний пізніше". Що саме він робить, коли його викликають — залежить від того, чи є що передавати:</p>
+      <ul style="margin:0 0 10px; padding-left:20px; line-height:1.9;">
+        <li><strong>Є значення для передачі</strong> — <code>const price = await locator.textContent()</code>. Callback отримує реальний текст і кладе його в змінну.</li>
+        <li><strong>Нема що передавати</strong> — <code>await click(); await waitFor();</code>. <code>click()</code> не повертає нічого змістовного, тому callback1 просто запускає наступну дію, нічого не "отримуючи" з попередньої.</li>
+      </ul>
+    </div>
+
+    <div class="pattern-box">
+      <strong>&#128295; Ключова фраза, варта запам'ятати дослівно</strong>
+      Callback — завжди "шматок коду, викликаний пізніше". Іноді він одразу використовує передане значення — коли є що передавати. Іноді він просто запускає наступну дію без жодного значення — коли передавати нічого. Обидва випадки — той самий механізм, просто з різним вмістом усередині.
+    </div>
+
+    <div class="voice-box">
+      <span class="voice-label">&#128483; Як читати вголос</span>
+      Await не окрема команда почекай, це синтаксис який каже: візьми весь код що йде нижче і оберни його в callback, приліплений до Promise через then. Межа цього callback проходить до найближчого наступного await, а якщо його немає — до кінця функції, і це не буквально наступний рядок, бо між двома await може бути кілька синхронних рядків, і всі вони потрапляють в один і той самий callback. Callback сам по собі — це завжди просто шматок коду, викликаний пізніше, і головне тут не плутати дві ситуації. Якщо асинхронна функція повертає значення, callback це значення отримує і використовує. Але якщо повертати нічого змістовного, як у click, callback просто запускає наступну дію, без жодного переданого значення. Це той самий механізм в обох випадках, просто з різним вмістом усередині callback.
+    </div>
+  </div>
+</div>
+
+<!-- Q_NEW_EVENT_LOOP_MECHANICS -->
+<div class="question-card q-card" data-sec="1" data-level="senior">
+  <div class="q-header" onclick="toggleCard(this)">
+    <span class="q-num">13</span>
+    <span class="q-title">Що таке event loop і як він працює з call stack та чергою?</span>
+    <div class="q-right"><span class="sec-badge" style="color:var(--junior); border-color:var(--junior)">JS/TS</span>
+      <span class="level-badge badge-senior">Senior</span>
+      <span class="chevron">&#9654;</span>
+    </div>
+  </div>
+  <div class="q-body">
+    <div class="answer">
+      <p style="margin:0 0 10px; padding:10px 14px; background:var(--surface); border-left:3px solid var(--purple); border-radius:4px;"><em>(Для простоти поки що вважатимемо, що черга одна. У наступній картці побачимо, що насправді їх дві.)</em></p>
+      <p style="margin:0 0 10px;"><strong>Event loop — не частина V8.</strong> Це поширена помилка. Event loop у Node.js реалізований бібліотекою <strong>libuv</strong> (C-бібліотека для асинхронного I/O), не самим JS-рушієм. V8 відповідає за виконання JavaScript, тримає call stack і обробляє microtask queue (продовження після <code>await</code>, <code>.then()</code>). Libuv координує коли передати керування назад у V8, забираючи готові задачі з черги.</p>
+      <p style="margin:0 0 6px;"><strong>Дійові особи, і де саме вони живуть:</strong></p>
+      <ul style="margin:0 0 10px; padding-left:20px; line-height:1.9;">
+        <li><strong>Call Stack</strong> — належить V8 (JS-рушію). Node.js використовує цей стек для виконання твого тестового коду.</li>
+        <li><strong>Черга</strong> — тут з'являється продовження, коли приходить відповідь від браузера.</li>
+        <li><strong>Браузер</strong> — окремий процес зі своїм власним call stack, який тебе як тестувальницю не стосується.</li>
+        <li><strong>Event loop</strong> (у libuv) — координує, коли готова задача з черги передається назад у V8 на виконання.</li>
+      </ul>
+      <p style="margin:0 0 10px;"><strong>Покроково, на прикладі <code>await click(); await waitFor();</code>:</strong></p>
+    </div>
+
+    <div class="code-label">Call Stack / Черга / Браузер — повний цикл двох await</div>
+    <pre style="font-size:12px; line-height:1.8;"><code>1. click() виконується                    │ —          │ —
+2. відправила запит, звільнилась → СТЕК ПОРОЖНІЙ │ —  │ обробляє клік
+3. порожній                                │ —          │ клік завершено, шле "готово"
+4. порожній                                │ callback1 у черзі │ —
+5. event loop передає callback1 у V8, той кладе на стек │ порожньо │ —
+6. callback1 виконується: викликає waitFor()│ —         │ —
+7. waitFor() відправила запит, стек порожній│ —         │ шукає елемент
+8. порожній                                │ —          │ знайшов, шле "готово"
+9. порожній                                │ callback2 у черзі │ —
+10. event loop передає callback2 у V8      │ порожньо   │ —</code></pre>
+
+    <div class="answer">
+      <p style="margin:0; padding:10px 14px; background:var(--surface); border-left:3px solid var(--orange); border-radius:4px;"><strong>Чому callback не летить напряму на стек, а спочатку в чергу:</strong> JS виконує лише одну функцію за раз. Якби готовий код клався одразу на стек — він міг би влізти посеред того, що вже там виконується, і перервати на середині. Черга — буфер ввічливості: новий код чекає, поки стек не звільниться сам, і тільки тоді event loop його забирає.</p>
+    </div>
+
+    <div class="voice-box">
+      <span class="voice-label">&#128483; Як читати вголос</span>
+      Event loop не частина V8, і це поширена помилка. У Node.js event loop реалізований бібліотекою libuv, окремою C-бібліотекою для асинхронного I/O. V8 відповідає за виконання JavaScript, тримає call stack і обробляє microtask queue. Libuv координує коли передати керування назад у V8, забираючи готові задачі з черги. Важливо розуміти де що фізично живе: call stack належить V8, Node.js його використовує для виконання твого тестового коду. Браузер має свій власний окремий call stack який нас не стосується. Кожен await в тесті це окремий повний цикл: відправили команду, стек звільнився, браузер обробляє, браузер відповів, callback потрапив у чергу, event loop переніс його назад у V8, код продовжився. І головне питання яке варто собі поставити: чому callback не летить одразу на стек, а спочатку чекає в черзі? Тому що JavaScript виконує лише одну функцію за раз, і якби готовий код клався прямо на стек, він міг би перервати посеред виконання щось, що там вже є. Черга гарантує що новий код завжди чекає, поки стек не звільниться сам природним шляхом.
+    </div>
+  </div>
+</div>
+
+<!-- Q_NEW_MICRO_MACRO_TASKS -->
+<div class="question-card q-card" data-sec="1" data-level="senior">
+  <div class="q-header" onclick="toggleCard(this)">
+    <span class="q-num">14</span>
+    <span class="q-title">Мікротаски vs макротаски — чому JavaScript взагалі знадобилися дві черги?</span>
+    <div class="q-right"><span class="sec-badge" style="color:var(--junior); border-color:var(--junior)">JS/TS</span>
+      <span class="level-badge badge-senior">Senior</span>
+      <span class="chevron">&#9654;</span>
+    </div>
+  </div>
+  <div class="q-body">
+    <div class="answer">
+      <p style="margin:0 0 10px;">У попередній картці ми для простоти уявляли, що черга одна. Насправді їх дві. Питання не в тому, чим вони відрізняються. Питання в тому, <strong>чому однієї виявилось недостатньо</strong>.</p>
+    </div>
+
+    <div class="code-label">TypeScript — чому Promise випереджає setTimeout(0)</div>
+    <pre><code><span class="kw">console</span>.<span class="fn">log</span>(<span class="str">'1'</span>);
+<span class="fn">setTimeout</span>(() => <span class="kw">console</span>.<span class="fn">log</span>(<span class="str">'2: macrotask'</span>), <span class="num">0</span>);
+<span class="cls">Promise</span>.<span class="fn">resolve</span>().<span class="fn">then</span>(() => <span class="kw">console</span>.<span class="fn">log</span>(<span class="str">'3: microtask'</span>));
+<span class="kw">console</span>.<span class="fn">log</span>(<span class="str">'4'</span>);
+
+<span class="cm">// Виведе: 1, 4, 3, 2</span></code></pre>
+
+    <div class="answer">
+      <p style="margin:0 0 10px;">Перше питання, яке виникає майже в усіх: чому Promise виконався раніше за <code>setTimeout(0)</code>? Адже таймер теж уже готовий.</p>
+      <p style="margin:0 0 10px; padding:10px 14px; background:var(--surface); border-left:3px solid var(--purple); border-radius:4px;">💡 <strong>JavaScript розділяє задачі не за швидкістю, а за роллю.</strong></p>
+      <p style="margin:0 0 6px;"><strong>Продовження вже розпочатої роботи.</strong> У більшості коду, який ми пишемо (і практично у всьому Playwright), microtask використовується саме для продовження вже розпочатої асинхронної операції:</p>
+    </div>
+
+    <div class="code-label">TypeScript — продовження вже розпочатої роботи</div>
+    <pre><code><span class="kw">const</span> text = <span class="kw">await</span> page.<span class="fn">textContent</span>();
+<span class="cm">// виконається тільки після відповіді браузера</span>
+<span class="kw">console</span>.<span class="fn">log</span>(text);</code></pre>
+
+    <div class="answer">
+      <p style="margin:0 0 10px;"><code>console.log(text)</code> не нова задача, а продовження тієї самої функції після завершення <code>textContent()</code>. Саме тому це microtask.</p>
+      <p style="margin:0 0 10px;"><strong>Macrotask — починає нову незалежну роботу.</strong> <code>setTimeout(() => console.log('cleanup'), 0)</code> — колбек таймера не продовжує жоден <code>await</code>. Це окреме прохання: "коли буде можливість — виконай ще й це".</p>
+      <p style="margin:0 0 10px;">Саме через цю різницю ролей JavaScript завжди спершу закінчує весь поточний ланцюжок виконання (усі microtasks), і лише потім переходить до наступної незалежної задачі (macrotask).</p>
+      <p style="margin:0 0 10px; padding:10px 14px; background:var(--surface); border-left:3px solid var(--purple); border-radius:4px;">💡 <strong>Не варто запам'ятовувати:</strong> "microtasks виконуються раніше". Краще запам'ятати причину: JavaScript спочатку завершує вже розпочату роботу, і лише потім починає нову.</p>
+      <p style="margin:0 0 6px;"><strong>А хто всім цим керує?</strong> Відповідальність тут теж поділена: <strong>V8</strong> відповідає за виконання JavaScript і microtasks, <strong>libuv</strong> відповідає за event loop і macrotasks.</p>
+      <ul style="margin:0 0 10px; padding-left:20px; line-height:1.9;">
+        <li><strong>Microtask queue</strong> обробляє <strong>V8</strong>. Сюди потрапляє продовження після кожного <code>await</code> і кожного <code>.then()</code>. Оскільки майже всі дії Playwright (<code>click</code>, <code>goto</code>, <code>fill</code>, <code>textContent</code>) завершуються через Promise, їх продовження теж опиняється саме тут.</li>
+        <li><strong>Macrotask queue</strong> координує <strong>event loop (libuv)</strong>. Тут живуть <code>setTimeout</code>, <code>setInterval</code>. <code>page.waitForTimeout()</code> зрештою використовує цей самий механізм таймерів.</li>
+      </ul>
+      <p style="margin:0; font-size:12px; color:var(--muted);"><em>(Технічна виноска: є рідкісний випадок <code>queueMicrotask()</code>, який дозволяє явно поставити в microtask queue будь-яку функцію, навіть таку, що нічого не "продовжує" — у 99% Playwright-коду це не зустрічається, тому основне правило вище тримається.)</em></p>
+    </div>
+
+    <div class="voice-box">
+      <span class="voice-label">&#128483; Як читати вголос</span>
+      У попередній картці ми для простоти уявляли, що черга одна, але насправді їх дві, і питання не в тому чим вони відрізняються, а в тому чому однієї виявилось недостатньо. JavaScript розділяє задачі не за швидкістю, а за роллю. Microtask використовується для продовження вже розпочатої асинхронної операції — наприклад код після await, який просто продовжує ту саму функцію після того як textContent завершився. Macrotask навпаки починає нову незалежну роботу — колбек таймера не продовжує жоден await, це окреме прохання виконати ще щось коли буде можливість. Саме через цю різницю ролей JavaScript завжди спершу закінчує весь поточний ланцюжок виконання, усі microtasks, і лише потім переходить до наступної незалежної задачі. Не варто запам'ятовувати що мікротаски виконуються раніше як окреме правило — краще запам'ятати причину: JavaScript спочатку завершує вже розпочату роботу, і лише потім починає нову. Відповідальність за це поділена: V8 відповідає за виконання JavaScript і мікротаски, libuv відповідає за event loop і макротаски.
+    </div>
+  </div>
+</div>
+
+<!-- Q_NEW_PROMISE_ALL -->
+<div class="question-card q-card" data-sec="1" data-level="senior">
+  <div class="q-header" onclick="toggleCard(this)">
+    <span class="q-num">15</span>
+    <span class="q-title">Коли можна відправляти кілька запитів одночасно через Promise.all(), а коли не варто?</span>
+    <div class="q-right"><span class="sec-badge" style="color:var(--junior); border-color:var(--junior)">JS/TS</span>
+      <span class="level-badge badge-senior">Senior</span>
+      <span class="chevron">&#9654;</span>
+    </div>
+  </div>
+  <div class="q-body">
+    <div class="answer">
+      <p style="margin:0 0 10px;">Оскільки виклик асинхронної функції завжди <strong>синхронний і миттєвий</strong> (відправляє команду і одразу звільняє стек) — можна відправити кілька незалежних запитів одночасно, замість того щоб чекати кожен по черзі:</p>
+    </div>
+
+    <div class="code-label">TypeScript — паралельне читання vs послідовне</div>
+    <pre><code><span class="cm">// ❌ послідовно — чекаємо кожен окремо, довше</span>
+<span class="kw">const</span> price = <span class="kw">await</span> page.<span class="fn">locator</span>(<span class="str">'.price'</span>).<span class="fn">textContent</span>();
+<span class="kw">const</span> stock = <span class="kw">await</span> page.<span class="fn">locator</span>(<span class="str">'.stock'</span>).<span class="fn">textContent</span>();
+
+<span class="cm">// ✅ паралельно — обидва запити летять одночасно</span>
+<span class="kw">const</span> [price, stock] = <span class="kw">await</span> <span class="cls">Promise</span>.<span class="fn">all</span>([
+  page.<span class="fn">locator</span>(<span class="str">'.price'</span>).<span class="fn">textContent</span>(),
+  page.<span class="fn">locator</span>(<span class="str">'.stock'</span>).<span class="fn">textContent</span>(),
+]);</code></pre>
+
+    <div class="answer">
+      <p style="margin:0; padding:10px 14px; background:var(--surface); border-left:3px solid #e74c3c; border-radius:4px;"><strong>⚠️ Але НЕ клади кілька дій (не читання, а саме дій) в один <code>Promise.all()</code>.</strong> Playwright гарантує стабільність окремої дії через auto-waiting; якщо запустити дві дії одночасно на одній Page, вони можуть почати конкурувати за фокус, DOM або навігацію — це поводиться як кілька людей, що одночасно керують однією клавіатурою.</p>
+    </div>
+
+    <div class="code-label">TypeScript — правильно (waiter + trigger) vs небезпечно (дія + дія)</div>
+    <pre><code><span class="cm">// ✅ Правильний патерн Promise.all: очікувач ПЕРЕД дією-тригером</span>
+<span class="kw">const</span> [response] = <span class="kw">await</span> <span class="cls">Promise</span>.<span class="fn">all</span>([
+  page.<span class="fn">waitForResponse</span>(<span class="str">'**/api/checkout'</span>), <span class="cm">// підписка йде ПЕРШОЮ</span>
+  page.<span class="fn">locator</span>(<span class="str">'button.submit'</span>).<span class="fn">click</span>(),   <span class="cm">// тригер — другим</span>
+]);
+<span class="cm">// Порядок важливий: якщо клік стоятиме першим, відповідь може</span>
+<span class="cm">// прийти РАНІШЕ ніж waitForResponse встигне підписатись — і тест зависне</span>
+
+<span class="cm">// ❌ Небезпечно: дві незалежні ДІЇ в одному Promise.all()</span>
+<span class="kw">await</span> <span class="cls">Promise</span>.<span class="fn">all</span>([
+  page.<span class="fn">locator</span>(<span class="str">'input#email'</span>).<span class="fn">fill</span>(<span class="str">'test@test.com'</span>),
+  page.<span class="fn">locator</span>(<span class="str">'input#name'</span>).<span class="fn">fill</span>(<span class="str">'Test User'</span>),
+]);
+<span class="cm">// Обидва fill() б'ють по сторінці "одночасно" — непередбачувано,</span>
+<span class="cm">// навіть якщо поля різні. Краще просто await по черзі — це швидко.</span></code></pre>
+
+    <div class="voice-box">
+      <span class="voice-label">&#128483; Як читати вголос</span>
+      Оскільки виклик асинхронної функції завжди синхронний і миттєвий, він відправляє команду і одразу звільняє стек, можна відправити кілька незалежних запитів одночасно замість того щоб чекати кожен по черзі, і саме для цього існує Promise.all. Але тут є важлива межа яку легко переступити: Playwright гарантує стабільність окремої дії через auto-waiting, і якщо запустити дві дії одночасно на одній сторінці, вони можуть почати конкурувати за фокус, DOM або навігацію — це поводиться як кілька людей що одночасно керують однією клавіатурою, непередбачувано, навіть якщо дії стосуються різних полів. Promise.all добре підходить для комбінації очікувач плюс тригер, наприклад чекаємо на мережеву відповідь і одночасно клікаємо кнопку яка цю відповідь викликає, і порядок тут важливий, очікувач має йти першим у масиві, інакше відповідь може прийти раніше ніж підписка встигне спрацювати. Для дій просто пиши await по черзі, це і так швидко.
+    </div>
+  </div>
+</div>
 
 <div class="question-card q-card" data-sec="1" data-level="junior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">11</span>
+    <span class="q-num">16</span>
     <span class="q-title">Що таке серіалізація і навіщо вона потрібна при передачі даних між Node.js і браузером?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--junior); border-color:var(--junior)">JS/TS</span><span class="level-badge badge-junior">Junior</span><span class="chevron">▶</span></div>
   </div>
@@ -1299,7 +1546,7 @@ page.<span class="fn">on</span>(<span class="str">'dialog'</span>, dialog => {
 
 <div class="question-card q-card" data-sec="1" data-level="junior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">12</span>
+    <span class="q-num">17</span>
     <span class="q-title">Що таке spread оператор ... і як він використовується в Playwright?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--junior); border-color:var(--junior)">JS/TS</span><span class="level-badge badge-junior">Junior</span><span class="chevron">▶</span></div>
   </div>
@@ -1370,7 +1617,7 @@ use: { ...devices[<span class="str">'iPhone 14'</span>], locale: <span class="st
 
 <div class="question-card q-card" data-sec="1" data-level="junior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">13</span>
+    <span class="q-num">18</span>
     <span class="q-title">Що таке статичний метод і чим він відрізняється від звичайного?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--junior); border-color:var(--junior)">JS/TS</span><span class="level-badge badge-junior">Junior</span><span class="chevron">▶</span></div>
   </div>
@@ -1440,7 +1687,7 @@ m.<span class="fn">add</span>(<span class="num">5</span>); <span class="cm">// �
 
 <div class="question-card q-card" data-sec="1" data-level="junior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">14</span>
+    <span class="q-num">19</span>
     <span class="q-title">Що таке try/catch і коли його використовувати в тестах?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--junior); border-color:var(--junior)">JS/TS</span><span class="level-badge badge-junior">Junior</span><span class="chevron">▶</span></div>
   </div>
@@ -1532,7 +1779,7 @@ m.<span class="fn">add</span>(<span class="num">5</span>); <span class="cm">// �
 
 <div class="question-card q-card" data-sec="2" data-level="junior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">15</span>
+    <span class="q-num">20</span>
     <span class="q-title">Які основні локатори є в Playwright? Що таке семантичні локатори?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--junior); border-color:var(--junior)">Локатори</span><span class="level-badge badge-junior">Junior</span><span class="chevron">▶</span></div>
   </div>
@@ -1588,7 +1835,7 @@ page.<span class="fn">locator</span>(<span class="str">'.sc-a8f9b2 > div:nth-chi
 
 <div class="question-card q-card" data-sec="2" data-level="junior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">16</span>
+    <span class="q-num">21</span>
     <span class="q-title">Що таке strict mode в локаторах і чому Playwright падає, якщо знайдено 2+ елементи?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--junior); border-color:var(--junior)">Локатори</span><span class="level-badge badge-junior">Junior</span><span class="chevron">▶</span></div>
   </div>
@@ -1646,7 +1893,7 @@ page.<span class="fn">locator</span>(<span class="str">'.sc-a8f9b2 > div:nth-chi
 
 <div class="question-card q-card" data-sec="2" data-level="junior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">17</span>
+    <span class="q-num">22</span>
     <span class="q-title">Що таке ElementHandle, чи є він у Playwright і чому його не треба використовувати?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--junior); border-color:var(--junior)">Локатори</span><span class="level-badge badge-junior">Junior</span><span class="chevron">▶</span></div>
   </div>
@@ -1701,7 +1948,7 @@ page.<span class="fn">locator</span>(<span class="str">'.sc-a8f9b2 > div:nth-chi
 
 <div class="question-card q-card" data-sec="2" data-level="junior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">18</span>
+    <span class="q-num">23</span>
     <span class="q-title">Що таке auto-waiting в Playwright і як він працює?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--junior); border-color:var(--junior)">Локатори</span><span class="level-badge badge-junior">Junior</span><span class="chevron">▶</span></div>
   </div>
@@ -1762,7 +2009,7 @@ page.<span class="fn">locator</span>(<span class="str">'.sc-a8f9b2 > div:nth-chi
 
 <div class="question-card q-card" data-sec="2" data-level="junior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">19</span>
+    <span class="q-num">24</span>
     <span class="q-title">Що не так з page.waitForTimeout()? Чому це антипатерн?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--junior); border-color:var(--junior)">Локатори</span><span class="level-badge badge-junior">Junior</span><span class="chevron">▶</span></div>
   </div>
@@ -1796,7 +2043,7 @@ page.<span class="fn">locator</span>(<span class="str">'.sc-a8f9b2 > div:nth-chi
 
 <div class="question-card q-card" data-sec="2" data-level="junior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">20</span>
+    <span class="q-num">25</span>
     <span class="q-title">Чому waitForLoadState('networkidle') вважається пасткою, а не надійним рішенням?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--junior); border-color:var(--junior)">Локатори</span><span class="level-badge badge-junior">Junior</span><span class="chevron">▶</span></div>
   </div>
@@ -1840,7 +2087,7 @@ page.<span class="fn">locator</span>(<span class="str">'.sc-a8f9b2 > div:nth-chi
 
 <div class="question-card q-card" data-sec="2" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">21</span>
+    <span class="q-num">26</span>
     <span class="q-title">Скільки рівнів таймаутів є в Playwright і чому тест падає попри те що ти поставила timeout: 60000?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--junior); border-color:var(--junior)">Локатори</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -1953,7 +2200,7 @@ test.<span class="fn">describe</span>(<span class="str">'повільні інт
 
 <div class="question-card q-card" data-sec="2" data-level="junior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">22</span>
+    <span class="q-num">27</span>
     <span class="q-title">Що таке web-first assertions і чим вони відрізняються від звичайного expect/assert?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--junior); border-color:var(--junior)">Локатори</span><span class="level-badge badge-junior">Junior</span><span class="chevron">▶</span></div>
   </div>
@@ -2015,7 +2262,7 @@ test.<span class="fn">describe</span>(<span class="str">'повільні інт
 
 <div class="question-card q-card" data-sec="2" data-level="junior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">23</span>
+    <span class="q-num">28</span>
     <span class="q-title">Що таке soft assertions і коли їх використовувати?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--junior); border-color:var(--junior)">Локатори</span><span class="level-badge badge-junior">Junior</span><span class="chevron">▶</span></div>
   </div>
@@ -2051,7 +2298,7 @@ test.<span class="fn">describe</span>(<span class="str">'повільні інт
 
 <div class="question-card q-card" data-sec="2" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">24</span>
+    <span class="q-num">29</span>
     <span class="q-title">Що таке page.waitForFunction() і коли він потрібен якщо є web-first assertions?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--junior); border-color:var(--junior)">Локатори</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -2252,7 +2499,7 @@ test.<span class="fn">describe</span>(<span class="str">'повільні інт
 
 <div class="question-card q-card" data-sec="2" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">25</span>
+    <span class="q-num">30</span>
     <span class="q-title">Що таке expect.poll() і коли його використовувати?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--junior); border-color:var(--junior)">Локатори</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -2305,7 +2552,7 @@ test.<span class="fn">describe</span>(<span class="str">'повільні інт
 
 <div class="question-card q-card" data-sec="2" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">26</span>
+    <span class="q-num">31</span>
     <span class="q-title">Як реалізувати Custom Expect Matchers?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--junior); border-color:var(--junior)">Локатори</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -2378,7 +2625,7 @@ test.<span class="fn">describe</span>(<span class="str">'повільні інт
 
 <div class="question-card q-card" data-sec="2" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">27</span>
+    <span class="q-num">32</span>
     <span class="q-title">Чи треба щось особливе робити, щоб локатори бачили елементи в Shadow DOM?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--junior); border-color:var(--junior)">Локатори</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -2440,7 +2687,7 @@ test.<span class="fn">describe</span>(<span class="str">'повільні інт
 
 <div class="question-card q-card" data-sec="3" data-level="junior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">28</span>
+    <span class="q-num">33</span>
     <span class="q-title">Що таке fixtures в Playwright? Як використовувати вбудовані?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Fixtures</span><span class="level-badge badge-junior">Junior</span><span class="chevron">▶</span></div>
   </div>
@@ -2477,7 +2724,7 @@ test.<span class="fn">describe</span>(<span class="str">'повільні інт
 
 <div class="question-card q-card" data-sec="3" data-level="middle">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">29</span>
+    <span class="q-num">34</span>
     <span class="q-title">Навіщо кастомні fixtures якщо є beforeEach? Як вибрати між ними?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Fixtures</span><span class="level-badge badge-middle">Middle</span><span class="chevron">▶</span></div>
   </div>
@@ -2525,7 +2772,7 @@ test.<span class="fn">describe</span>(<span class="str">'повільні інт
 
 <div class="question-card q-card" data-sec="3" data-level="middle">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">30</span>
+    <span class="q-num">35</span>
     <span class="q-title">Що таке кастомні fixtures і як їх створювати?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Fixtures</span><span class="level-badge badge-middle">Middle</span><span class="chevron">▶</span></div>
   </div>
@@ -2593,7 +2840,7 @@ dbConnection: <span class="kw">async</span> ({}, use) => { <span class="kw">cons
 
 <div class="question-card q-card" data-sec="3" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">31</span>
+    <span class="q-num">36</span>
     <span class="q-title">Що таке fixtures з yield? Чим це відрізняється від use() і коли краще використовувати?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Fixtures</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -2716,7 +2963,7 @@ testEnvironment: <span class="kw">async function</span>* () {
 
 <div class="question-card q-card" data-sec="3" data-level="middle">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">32</span>
+    <span class="q-num">37</span>
     <span class="q-title">Що таке worker-scoped fixtures і в чому відмінність від test-scoped?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Fixtures</span><span class="level-badge badge-middle">Middle</span><span class="chevron">▶</span></div>
   </div>
@@ -2773,7 +3020,7 @@ testEnvironment: <span class="kw">async function</span>* () {
 
 <div class="question-card q-card" data-sec="3" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">33</span>
+    <span class="q-num">38</span>
     <span class="q-title">Що таке auto: true у fixtures і коли це краще ніж beforeEach?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Fixtures</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -2973,7 +3220,7 @@ ${errors.map(e => e.message).join('
 
 <div class="question-card q-card" data-sec="3" data-level="junior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">34</span>
+    <span class="q-num">39</span>
     <span class="q-title">Що таке test.beforeEach / afterEach / beforeAll / afterAll?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Fixtures</span><span class="level-badge badge-junior">Junior</span><span class="chevron">▶</span></div>
   </div>
@@ -3025,7 +3272,7 @@ test.<span class="fn">describe</span>(<span class="str">'Shopping Cart'</span>, 
 
 <div class="question-card q-card" data-sec="3" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">35</span>
+    <span class="q-num">40</span>
     <span class="q-title">Який порядок виконання beforeAll, beforeEach, afterEach, afterAll при вкладених describe?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Fixtures</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -3165,7 +3412,7 @@ test.<span class="fn">describe</span>(<span class="str">'Products'</span>, () =>
 
 <div class="question-card q-card" data-sec="3" data-level="middle">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">36</span>
+    <span class="q-num">41</span>
     <span class="q-title">Чому не можна шарити стан між тестами через звичайну глобальну змінну?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Fixtures</span><span class="level-badge badge-middle">Middle</span><span class="chevron">▶</span></div>
   </div>
@@ -3228,7 +3475,7 @@ test.<span class="fn">beforeAll</span>(<span class="kw">async</span> () => { sha
 
 <div class="question-card q-card" data-sec="3" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">37</span>
+    <span class="q-num">42</span>
     <span class="q-title">Коли реально потрібні вкладені describe? Чому не завжди достатньо одного?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Fixtures</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -3360,7 +3607,7 @@ test.<span class="fn">describe</span>(<span class="str">'залогінений 
 
 <div class="question-card q-card" data-sec="3" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">38</span>
+    <span class="q-num">43</span>
     <span class="q-title">Що таке test.describe.serial() і чому це навмисний виняток з ізоляції тестів?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Fixtures</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -3406,7 +3653,7 @@ test.<span class="fn">describe</span>.<span class="fn">serial</span>(<span class
 
 <div class="question-card q-card" data-sec="3" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">39</span>
+    <span class="q-num">44</span>
     <span class="q-title">Що таке fullyParallel і чим він відрізняється від звичайного паралелізму між файлами?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Fixtures</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -3512,7 +3759,7 @@ test.<span class="fn">describe</span>(<span class="str">'залежні крок
 
 <div class="question-card q-card" data-sec="3" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">40</span>
+    <span class="q-num">45</span>
     <span class="q-title">Що таке test.use() на рівні describe і навіщо він потрібен якщо є глобальний use в конфізі?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Fixtures</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -3691,7 +3938,7 @@ test.<span class="fn">describe</span>(<span class="str">'французька л
 
 <div class="question-card q-card" data-sec="4" data-level="middle">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">41</span>
+    <span class="q-num">46</span>
     <span class="q-title">Що таке BrowserContext і навіщо він потрібен?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Браузер</span><span class="level-badge badge-middle">Middle</span><span class="chevron">▶</span></div>
   </div>
@@ -3756,7 +4003,7 @@ test.<span class="fn">describe</span>(<span class="str">'французька л
 
 <div class="question-card q-card" data-sec="4" data-level="middle">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">42</span>
+    <span class="q-num">47</span>
     <span class="q-title">Як реалізувати авторизацію один раз для всіх тестів (storageState)?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Браузер</span><span class="level-badge badge-middle">Middle</span><span class="chevron">▶</span></div>
   </div>
@@ -3836,7 +4083,7 @@ test.<span class="fn">describe</span>(<span class="str">'французька л
 
 <div class="question-card q-card" data-sec="4" data-level="middle">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">43</span>
+    <span class="q-num">48</span>
     <span class="q-title">Як працювати з localStorage в тестах? Що таке page.localStorage (Playwright 1.61+)?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Браузер</span><span class="level-badge badge-middle">Middle</span><span class="chevron">▶</span></div>
   </div>
@@ -3894,7 +4141,7 @@ test.<span class="fn">describe</span>(<span class="str">'французька л
 
 <div class="question-card q-card" data-sec="4" data-level="middle">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">44</span>
+    <span class="q-num">49</span>
     <span class="q-title">Як тестувати нові вкладки і popup-вікна?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Браузер</span><span class="level-badge badge-middle">Middle</span><span class="chevron">▶</span></div>
   </div>
@@ -3963,7 +4210,7 @@ page.<span class="fn">on</span>(<span class="str">'popup'</span>, <span class="k
 
 <div class="question-card q-card" data-sec="4" data-level="junior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">45</span>
+    <span class="q-num">50</span>
     <span class="q-title">Як працювати з iframe в Playwright?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Браузер</span><span class="level-badge badge-junior">Junior</span><span class="chevron">▶</span></div>
   </div>
@@ -4001,7 +4248,7 @@ page.<span class="fn">on</span>(<span class="str">'popup'</span>, <span class="k
 
 <div class="question-card q-card" data-sec="4" data-level="junior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">46</span>
+    <span class="q-num">51</span>
     <span class="q-title">Як обробляти діалоги (alert, confirm, prompt)?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Браузер</span><span class="level-badge badge-junior">Junior</span><span class="chevron">▶</span></div>
   </div>
@@ -4041,7 +4288,7 @@ page.<span class="fn">on</span>(<span class="str">'dialog'</span>, <span class="
 
 <div class="question-card q-card" data-sec="4" data-level="junior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">47</span>
+    <span class="q-num">52</span>
     <span class="q-title">Як заповнити форму і завантажити файл?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Браузер</span><span class="level-badge badge-junior">Junior</span><span class="chevron">▶</span></div>
   </div>
@@ -4084,7 +4331,7 @@ page.<span class="fn">on</span>(<span class="str">'dialog'</span>, <span class="
 
 <div class="question-card q-card" data-sec="4" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">48</span>
+    <span class="q-num">53</span>
     <span class="q-title">Що таке page.waitForEvent() і як правильно тестувати download, popup, dialog і filechooser?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Браузер</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -4214,7 +4461,7 @@ page.<span class="fn">on</span>(<span class="str">'dialog'</span>, <span class="
 
 <div class="question-card q-card" data-sec="4" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">49</span>
+    <span class="q-num">54</span>
     <span class="q-title">Що таке page.on('console'), page.on('pageerror') і page.on('request')? Чим вони відрізняються від waitForEvent?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Браузер</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -4356,7 +4603,7 @@ page.<span class="fn">on</span>(<span class="str">'dialog'</span>, <span class="
 
 <div class="question-card q-card" data-sec="4" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">50</span>
+    <span class="q-num">55</span>
     <span class="q-title">Яка різниця між page.on(), page.waitForEvent() і page.evaluate() для "слухання" подій?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Браузер</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -4447,7 +4694,7 @@ page.<span class="fn">on</span>(<span class="str">'console'</span>, msg => <span
 
 <div class="question-card q-card" data-sec="4" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">51</span>
+    <span class="q-num">56</span>
     <span class="q-title">Довідник основних класів Playwright — що кожен представляє і ключові методи</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Браузер</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -4655,7 +4902,7 @@ page.<span class="fn">workers</span>()       <span class="cm">// всі акти
 
 <div class="question-card q-card" data-sec="5" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">52</span>
+    <span class="q-num">57</span>
     <span class="q-title">Чим відрізняються page.evaluate(), page.exposeFunction() і page.addInitScript()? Це три різні "мости" між Node.js і браузером</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Evaluate</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -4781,7 +5028,7 @@ page.<span class="fn">workers</span>()       <span class="cm">// всі акти
 
 <div class="question-card q-card" data-sec="5" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">53</span>
+    <span class="q-num">58</span>
     <span class="q-title">Що таке page.addStyleTag() і page.addScriptTag()? Коли їх використовувати замість addInitScript?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Evaluate</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -4936,7 +5183,7 @@ page.<span class="fn">workers</span>()       <span class="cm">// всі акти
 
 <div class="question-card q-card" data-sec="5" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">54</span>
+    <span class="q-num">59</span>
     <span class="q-title">Що таке page.emulateMedia() і як тестувати темний режим та режим друку?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Evaluate</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -5067,7 +5314,7 @@ page.<span class="fn">workers</span>()       <span class="cm">// всі акти
 
 <div class="question-card q-card" data-sec="5" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">55</span>
+    <span class="q-num">60</span>
     <span class="q-title">Як тестувати геолокацію, дозволи браузера і timezone-залежну логіку?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Evaluate</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -5204,7 +5451,7 @@ page.<span class="fn">workers</span>()       <span class="cm">// всі акти
 
 <div class="question-card q-card" data-sec="5" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">56</span>
+    <span class="q-num">61</span>
     <span class="q-title">Що таке page.clock і як тестувати поведінку залежну від часу без реального очікування?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Evaluate</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -5291,7 +5538,7 @@ page.<span class="fn">workers</span>()       <span class="cm">// всі акти
 <!-- Q_NEW_CLOCK_LIMITATION -->
 <div class="question-card q-card" data-sec="5" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">57</span>
+    <span class="q-num">62</span>
     <span class="q-title">Коли page.clock не спрацює, хоча час "перемотався"?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Evaluate</span>
       <span class="level-badge badge-senior">Senior</span>
@@ -5370,7 +5617,7 @@ test(<span class="str">'carousel autoplay advances through slides'</span>, <span
 
 <div class="question-card q-card" data-sec="5" data-level="middle">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">58</span>
+    <span class="q-num">63</span>
     <span class="q-title">Як тестувати lazy-loaded контент і virtualized lists?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Evaluate</span><span class="level-badge badge-middle">Middle</span><span class="chevron">▶</span></div>
   </div>
@@ -5415,7 +5662,7 @@ test(<span class="str">'carousel autoplay advances through slides'</span>, <span
 
 <div class="question-card q-card" data-sec="5" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">59</span>
+    <span class="q-num">64</span>
     <span class="q-title">Як Playwright взаємодіє з Service Workers і чому вони можуть ламати page.route() і page.on('request')?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Evaluate</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -5527,7 +5774,7 @@ test(<span class="str">'carousel autoplay advances through slides'</span>, <span
 
 <div class="question-card q-card" data-sec="5" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">60</span>
+    <span class="q-num">65</span>
     <span class="q-title">Що таке PWA і як тестувати PWA функціональність в Playwright?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Evaluate</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -5612,7 +5859,7 @@ test(<span class="str">'carousel autoplay advances through slides'</span>, <span
 
 <div class="question-card q-card" data-sec="6" data-level="middle">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">61</span>
+    <span class="q-num">66</span>
     <span class="q-title">Як перехопити мережевий запит і замокати відповідь?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Мережа</span><span class="level-badge badge-middle">Middle</span><span class="chevron">▶</span></div>
   </div>
@@ -5692,7 +5939,7 @@ page.<span class="fn">on</span>(<span class="str">'request'</span>, <span class=
 
 <div class="question-card q-card" data-sec="6" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">62</span>
+    <span class="q-num">67</span>
     <span class="q-title">Як модифікувати запит або відповідь через page.route()? Різниця між fulfill, continue, fetch і abort</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Мережа</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -5833,7 +6080,7 @@ page.<span class="fn">on</span>(<span class="str">'request'</span>, <span class=
 
 <div class="question-card q-card" data-sec="6" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">63</span>
+    <span class="q-num">68</span>
     <span class="q-title">Навіщо після route.fetch() ще й route.fulfill()? Як це працює разом?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Мережа</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -5922,7 +6169,7 @@ page.<span class="fn">on</span>(<span class="str">'request'</span>, <span class=
 
 <div class="question-card q-card" data-sec="6" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">64</span>
+    <span class="q-num">69</span>
     <span class="q-title">Як винести логіку page.route() на рівень конфігурації щоб вона спрацьовувала для всіх тестів?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Мережа</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -6006,7 +6253,7 @@ page.<span class="fn">on</span>(<span class="str">'request'</span>, <span class=
 
 <div class="question-card q-card" data-sec="6" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">65</span>
+    <span class="q-num">70</span>
     <span class="q-title">Що таке HAR-файли і як використовувати page.routeFromHAR() для стабільних тестів без живого API?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Мережа</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -6120,7 +6367,7 @@ page.<span class="fn">on</span>(<span class="str">'request'</span>, <span class=
 
 <div class="question-card q-card" data-sec="6" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">66</span>
+    <span class="q-num">71</span>
     <span class="q-title">Як тестувати WebSocket з'єднання?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Мережа</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -6195,7 +6442,7 @@ page.<span class="fn">on</span>(<span class="str">'request'</span>, <span class=
 
 <div class="question-card q-card" data-sec="6" data-level="middle">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">67</span>
+    <span class="q-num">72</span>
     <span class="q-title">Як тестувати API requests напряму (без браузера) в Playwright?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Мережа</span><span class="level-badge badge-middle">Middle</span><span class="chevron">▶</span></div>
   </div>
@@ -6249,7 +6496,7 @@ page.<span class="fn">on</span>(<span class="str">'request'</span>, <span class=
 
 <div class="question-card q-card" data-sec="6" data-level="middle">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">68</span>
+    <span class="q-num">73</span>
     <span class="q-title">Як перехопити і валідувати GTM/dataLayer події?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--orange); border-color:var(--orange)">Мережа</span><span class="level-badge badge-middle">Middle</span><span class="chevron">▶</span></div>
   </div>
@@ -6340,7 +6587,7 @@ window.dataLayer.push({
 
 <div class="question-card q-card" data-sec="7" data-level="middle">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">69</span>
+    <span class="q-num">74</span>
     <span class="q-title">Як ти дебажиш тест, що падає тільки в CI, а локально проходить?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--purple); border-color:var(--purple)">Debug</span><span class="level-badge badge-middle">Middle</span><span class="chevron">▶</span></div>
   </div>
@@ -6426,7 +6673,7 @@ npx playwright test --ui
 
 <div class="question-card q-card" data-sec="7" data-level="junior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">70</span>
+    <span class="q-num">75</span>
     <span class="q-title">Як зробити скриншот і відео в тесті?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--purple); border-color:var(--purple)">Debug</span><span class="level-badge badge-junior">Junior</span><span class="chevron">▶</span></div>
   </div>
@@ -6467,7 +6714,7 @@ use: {
 
 <div class="question-card q-card" data-sec="7" data-level="middle">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">71</span>
+    <span class="q-num">76</span>
     <span class="q-title">Як налаштувати retry та обробити flaky тести?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--purple); border-color:var(--purple)">Debug</span><span class="level-badge badge-middle">Middle</span><span class="chevron">▶</span></div>
   </div>
@@ -6512,7 +6759,7 @@ retries: process.env.CI ? <span class="num">2</span> : <span class="num">0</span
 
 <div class="question-card q-card" data-sec="7" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">72</span>
+    <span class="q-num">77</span>
     <span class="q-title">Що таке race condition і як вона проявляється в тестах?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--purple); border-color:var(--purple)">Debug</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -6574,7 +6821,7 @@ retries: process.env.CI ? <span class="num">2</span> : <span class="num">0</span
 
 <div class="question-card q-card" data-sec="7" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">73</span>
+    <span class="q-num">78</span>
     <span class="q-title">Які класи помилок є в Playwright і коли використовувати try/catch у тестах?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--purple); border-color:var(--purple)">Debug</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -6729,7 +6976,7 @@ Title: ${</span><span class="kw">await</span> page.<span class="fn">title</span>
 
 <div class="question-card q-card" data-sec="7" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">74</span>
+    <span class="q-num">79</span>
     <span class="q-title">Розкажи про складний flaky-баг, який ти діагностувала і виправила</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--purple); border-color:var(--purple)">Debug</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -6788,7 +7035,7 @@ Title: ${</span><span class="kw">await</span> page.<span class="fn">title</span>
 
 <div class="question-card q-card" data-sec="8" data-level="middle">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">75</span>
+    <span class="q-num">80</span>
     <span class="q-title">Що таке Page Object Model (POM) в Playwright? Покажи реалізацію.</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--purple); border-color:var(--purple)">Архітектура</span><span class="level-badge badge-middle">Middle</span><span class="chevron">▶</span></div>
   </div>
@@ -6855,7 +7102,7 @@ Title: ${</span><span class="kw">await</span> page.<span class="fn">title</span>
 
 <div class="question-card q-card" data-sec="8" data-level="middle">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">76</span>
+    <span class="q-num">81</span>
     <span class="q-title">Як використовувати test.step() для структурування тестів?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--purple); border-color:var(--purple)">Архітектура</span><span class="level-badge badge-middle">Middle</span><span class="chevron">▶</span></div>
   </div>
@@ -6926,7 +7173,7 @@ Title: ${</span><span class="kw">await</span> page.<span class="fn">title</span>
 
 <div class="question-card q-card" data-sec="8" data-level="middle">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">77</span>
+    <span class="q-num">82</span>
     <span class="q-title">Що таке data-driven тестування в Playwright? Як реалізувати?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--purple); border-color:var(--purple)">Архітектура</span><span class="level-badge badge-middle">Middle</span><span class="chevron">▶</span></div>
   </div>
@@ -6974,7 +7221,7 @@ Title: ${</span><span class="kw">await</span> page.<span class="fn">title</span>
 
 <div class="question-card q-card" data-sec="8" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">78</span>
+    <span class="q-num">83</span>
     <span class="q-title">Як спроєктувати стратегію test data governance для e-commerce платформи?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--purple); border-color:var(--purple)">Архітектура</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -7017,7 +7264,7 @@ Title: ${</span><span class="kw">await</span> page.<span class="fn">title</span>
 
 <div class="question-card q-card" data-sec="8" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">79</span>
+    <span class="q-num">84</span>
     <span class="q-title">Як організувати стратегію тег-маркування та запускати підмножини тестів?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--purple); border-color:var(--purple)">Архітектура</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -7079,7 +7326,7 @@ Title: ${</span><span class="kw">await</span> page.<span class="fn">title</span>
 
 <div class="question-card q-card" data-sec="8" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">80</span>
+    <span class="q-num">85</span>
     <span class="q-title">Що таке test.skip(), test.fixme(), test.fail() і test.slow()? Чим вони відрізняються між собою?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--purple); border-color:var(--purple)">Архітектура</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -7196,7 +7443,7 @@ test.<span class="fn">describe</span>(<span class="str">'важкі e2e сцен
 
 <div class="question-card q-card" data-sec="8" data-level="junior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">81</span>
+    <span class="q-num">86</span>
     <span class="q-title">Як запустити тести в конкретному браузері? Як налаштувати playwright.config.ts?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--purple); border-color:var(--purple)">Архітектура</span><span class="level-badge badge-junior">Junior</span><span class="chevron">▶</span></div>
   </div>
@@ -7276,7 +7523,7 @@ npx playwright show-report                   <span class="cm"># відкрити
 
 <div class="question-card q-card" data-sec="8" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">82</span>
+    <span class="q-num">87</span>
     <span class="q-title">Навіщо в конфізі іноді бачимо channel: 'chrome'? Чим це відрізняється від звичайного Chromium?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--purple); border-color:var(--purple)">Архітектура</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -7307,7 +7554,7 @@ projects: [
 
 <div class="question-card q-card" data-sec="8" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">83</span>
+    <span class="q-num">88</span>
     <span class="q-title">Що таке project dependencies в playwright.config.ts і як гарантувати порядок виконання?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--purple); border-color:var(--purple)">Архітектура</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -7375,7 +7622,7 @@ projects: [
 
 <div class="question-card q-card" data-sec="8" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">84</span>
+    <span class="q-num">89</span>
     <span class="q-title">globalSetup vs project dependencies для авторизації — який підхід зараз вважається best practice?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--purple); border-color:var(--purple)">Архітектура</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -7440,7 +7687,7 @@ projects: [
 
 <div class="question-card q-card" data-sec="9" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">85</span>
+    <span class="q-num">90</span>
     <span class="q-title">Що таке CI runner і як GitLab запускає тести паралельно на різних машинах?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--purple); border-color:var(--purple)">Production</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -7510,7 +7757,7 @@ projects: [
 
 <div class="question-card q-card" data-sec="9" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">86</span>
+    <span class="q-num">91</span>
     <span class="q-title">Як організувати CI/CD pipeline для Playwright тестів на GitLab CI?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--purple); border-color:var(--purple)">Production</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -7574,7 +7821,7 @@ e2e:regression:
 
 <div class="question-card q-card" data-sec="9" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">87</span>
+    <span class="q-num">92</span>
     <span class="q-title">Як масштабувати тести за допомогою sharding та повного паралелізму?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--purple); border-color:var(--purple)">Production</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -7693,7 +7940,7 @@ test.describe.<span class="fn">configure</span>({ mode: <span class="str">'seria
 
 <div class="question-card q-card" data-sec="9" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">88</span>
+    <span class="q-num">93</span>
     <span class="q-title">Які репортери є в Playwright? Як налаштувати Allure і кілька репортерів одночасно?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--purple); border-color:var(--purple)">Production</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -7838,7 +8085,7 @@ reporter: [
 
 <div class="question-card q-card" data-sec="9" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">89</span>
+    <span class="q-num">94</span>
     <span class="q-title">Як реалізувати кастомний Reporter в Playwright?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--purple); border-color:var(--purple)">Production</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -7899,7 +8146,7 @@ reporter: [
 
 <div class="question-card q-card" data-sec="9" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">90</span>
+    <span class="q-num">95</span>
     <span class="q-title">Як реалізувати visual regression testing в Playwright?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--purple); border-color:var(--purple)">Production</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -7968,7 +8215,7 @@ reporter: [
 
 <div class="question-card q-card" data-sec="9" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">91</span>
+    <span class="q-num">96</span>
     <span class="q-title">Як тестувати доступність (a11y) в Playwright?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--purple); border-color:var(--purple)">Production</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -8020,7 +8267,7 @@ reporter: [
 
 <div class="question-card q-card" data-sec="9" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">92</span>
+    <span class="q-num">97</span>
     <span class="q-title">Як аналізувати performance під час тестів через Playwright?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--purple); border-color:var(--purple)">Production</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -8072,7 +8319,7 @@ reporter: [
 
 <div class="question-card q-card" data-sec="9" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">93</span>
+    <span class="q-num">98</span>
     <span class="q-title">Як використовувати toMatchSnapshot() для JSON і тексту, а не тільки для скріншотів?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--purple); border-color:var(--purple)">Production</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -8219,7 +8466,7 @@ npx playwright test product.spec.ts --update-snapshots
 
 <div class="question-card q-card" data-sec="9" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">94</span>
+    <span class="q-num">99</span>
     <span class="q-title">Як тестувати локалізацію і коректний routing на платформі з десятками country domains?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--purple); border-color:var(--purple)">Production</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -8268,7 +8515,7 @@ npx playwright test product.spec.ts --update-snapshots
 
 <div class="question-card q-card" data-sec="9" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">95</span>
+    <span class="q-num">100</span>
     <span class="q-title">Що таке Playwright Component Testing і чим воно відрізняється від E2E?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--purple); border-color:var(--purple)">Production</span><span class="level-badge badge-senior">Senior</span><span class="chevron">&#9654;</span></div>
   </div>
@@ -8349,7 +8596,7 @@ E2E (Playwright)      → весь застосунок цілком, реаль
 
 <div class="question-card q-card" data-sec="9" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">96</span>
+    <span class="q-num">101</span>
     <span class="q-title">Як ти дебажила CI pipeline після переходу на Node.js v24?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--purple); border-color:var(--purple)">Production</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -8389,7 +8636,7 @@ E2E (Playwright)      → весь застосунок цілком, реаль
 
 <div class="question-card q-card" data-sec="9" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">97</span>
+    <span class="q-num">102</span>
     <span class="q-title">Як ти, як QA Lead, балансуєш швидкість релізів і стабільність тестів?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--purple); border-color:var(--purple)">Production</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
@@ -8428,7 +8675,7 @@ E2E (Playwright)      → весь застосунок цілком, реаль
 
 <div class="question-card q-card" data-sec="9" data-level="senior">
   <div class="q-header" onclick="toggleCard(this)">
-    <span class="q-num">98</span>
+    <span class="q-num">103</span>
     <span class="q-title">Як ти онбордиш нового QA engineer у команду та підтримуєш стандарти коду?</span>
     <div class="q-right"><span class="sec-badge" style="color:var(--purple); border-color:var(--purple)">Production</span><span class="level-badge badge-senior">Senior</span><span class="chevron">▶</span></div>
   </div>
