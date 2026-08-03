@@ -91,4 +91,53 @@ https://iuliiaberezianska.github.io/playwright-notes/
 Opens as a mini-interview-style hook ("which line creates Browser? — none"), reveals playwright and @playwright/test as two separate packages/APIs, names test() as a registrar rather than an executor, and lands on an npm-install dependency-tree analogy as the memorable takeaway (replaced an earlier database connection-pool analogy).
 ---
 
+## Playwright Notes #4 — Що станеться, якщо прибрати async, залишивши await?
+**Series:** Playwright Notes  
+**Number:** #5  
+**Status:** Published  
+**Platform:** LinkedIn  
+**Date published:** 2026-07-XX  
+**Topic:**  
+async/await pairing / SyntaxError at parse time / function "slicing" / callback boundary
+**Core idea:**  
+async and await work only as a pair. async marks a function as "sliceable" — able to pause and resume; await marks where to slice. Removing async while keeping await isn't a runtime bug, it's a SyntaxError caught at parse time, before any code executes.
+**Related guide section:**  
+JavaScript / TypeScript for Playwright
+**Related guide cards:**  
+- Q12 — Що таке await насправді і як він "розшифровується" в callback?
+**Links:**  
+🔗 LinkedIn post:  https://lnkd.in/p/eBVmWG2T
+-
+🔗 Playwright Guide:  
+https://iuliiaberezianska.github.io/playwright-notes/
+**Notes:**  
+Opens with an honest disclosure that she's not a developer by background — came into automation from manual testing. Hook is a real interview question ("what happens if you remove async but keep await"), reveals the exact SyntaxError message and that it fires at parse time. Reuses the click/waitFor example unwrapped into .then() from the guide to show where the "slice" actually happens. Ends teasing Notes #6 on who returns the callback (event loop).
+
+---
+
+## Playwright Notes #5 — Хто повертає callback на виконання?
+**Series:** Playwright Notes  
+**Number:** #6  
+**Status:** Published  
+**Platform:** LinkedIn  
+**Date published:** 2026-07-XX  
+**Topic:**  
+Event loop / V8 vs libuv / call stack / queue
+**Core idea:**  
+Event loop is not part of V8 — a common misconception. It's implemented in libuv, a separate C library for async I/O, unrelated to JavaScript itself. V8 executes JavaScript, holds the call stack, and processes microtasks; libuv coordinates the event loop and hands control back to V8 when the stack is empty and the queue has a ready callback.
+**Related guide section:**  
+JavaScript / TypeScript for Playwright
+**Related guide cards:**  
+- Q13 — Що таке event loop і як він працює з call stack та чергою?
+**Links:**  
+🔗 LinkedIn post:  
+https://lnkd.in/p/erWzMvmh
+-
+🔗 Playwright Guide:  
+https://iuliiaberezianska.github.io/playwright-notes/
+**Notes:**  
+Continues directly from Notes #5's closing question. Hook is the same "недодевелопер" pattern — assumed answer ("event loop, sure") followed by a deeper question (where does it live) that reveals the V8/libuv misconception. Reuses the click/waitFor example a third time for continuity, walked step by step through call stack / queue / browser. Ends teasing Notes #7 on why there are actually two queues (microtasks vs macrotasks).
+
+---
+
 
